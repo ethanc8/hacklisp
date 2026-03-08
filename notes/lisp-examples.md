@@ -4,11 +4,11 @@
 
 ### McCarthy's original Lisp
 
-* [https://justine.lol/sectorlisp/jmc.pdf](https://justine.lol/sectorlisp/jmc.pdf)  
-  * **"The Roots of Lisp", very important**  
+* [Paul Graham, "The Roots of Lisp"](https://justine.lol/sectorlisp/jmc.pdf)  
+  * **the most important article** - a good summary of McCarthy's original ideas
 * 
 
-### **Sectorlisp**
+### Sectorlisp
 
 * [https://justine.lol/sectorlisp/](https://justine.lol/sectorlisp/)  
 * [https://justine.lol/sectorlisp2/](https://justine.lol/sectorlisp2/)  
@@ -17,11 +17,11 @@
 * [https://woodrush.github.io/blog/posts/2022-01-16-neural-networks-in-pure-lisp.html](https://woodrush.github.io/blog/posts/2022-01-16-neural-networks-in-pure-lisp.html)  
 * [https://woodrush.github.io/blog/posts/2022-01-12-sectorlisp-io.html](https://woodrush.github.io/blog/posts/2022-01-12-sectorlisp-io.html)
 
-### **LISP 1.5**
+### LISP 1.5
 
 * [https://softwarepreservation.computerhistory.org/LISP/book/LISP%201.5%20Programmers%20Manual.pdf](https://softwarepreservation.computerhistory.org/LISP/book/LISP%201.5%20Programmers%20Manual.pdf)
 
-### **More minimal LISPs**
+### More minimal LISPs
 
 * [https://github.com/rui314/minilisp](https://github.com/rui314/minilisp)  
 * [https://www.t3x.org/lisp64k/index.html](https://www.t3x.org/lisp64k/index.html)  
@@ -41,6 +41,9 @@
 * [https://github.com/zick/ZickStandardLisp](https://github.com/zick/ZickStandardLisp)  
   * 43 implementations  
   * https://news.ycombinator.com/item?id=15238271
+* GNU Mes
+  * [https://www.gnu.org/software/mes/manual/mes.html](https://www.gnu.org/software/mes/manual/mes.html)  
+  * [https://archive.fosdem.org/2021/schedule/event/gnumes/](https://archive.fosdem.org/2021/schedule/event/gnumes/)  
 
 ### **LISP interpreter tutorials**
 
@@ -54,6 +57,7 @@
 * [https://www.lwh.jp/lisp/](https://www.lwh.jp/lisp/)  
 * [https://github.com/kanaka/mal](https://github.com/kanaka/mal)  
   * Make-A-Lisp
+* Lisp From Nothing, Nils M Holm
 
 #### **More ones**
 
@@ -72,12 +76,4 @@
   * Scheme compiler written in Scheme  
 * [https://bernsteinbear.com/blog/lisp/](https://bernsteinbear.com/blog/lisp/)  
   * Ghuloum, but in C
-
-## Scheme and Mes
-
-### **GNU Mes**
-
-* [https://www.gnu.org/software/mes/manual/mes.html](https://www.gnu.org/software/mes/manual/mes.html)  
-* [https://archive.fosdem.org/2021/schedule/event/gnumes/](https://archive.fosdem.org/2021/schedule/event/gnumes/)  
-* 
 
