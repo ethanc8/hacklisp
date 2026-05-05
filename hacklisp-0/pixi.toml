@@ -1,0 +1,12 @@
+[workspace]
+authors = ["ethanc8 <echaroenpitaks@gmail.com>"]
+channels = ["conda-forge"]
+name = "hacklisp-0"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+clang = ">=22.1.4,<23"
+clang-tools = ">=22.1.4,<23"

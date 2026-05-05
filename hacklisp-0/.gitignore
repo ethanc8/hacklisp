@@ -1,2 +1,10 @@
 Main.jack
 hacklisp-0
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# clangd
+.cache
+compile_commands.json

@@ -29,6 +29,12 @@ class Main {
 #endif
 
 #if JACK
+
+#else
+constexpr void* RAM = 0;
+#endif
+
+#if JACK
 function i16 main() {
 	Output.printString("Hello, world!");
 	Output.println();
