@@ -1,3 +1,3 @@
 #!/bin/bash
 
-clang main.c -o hacklisp-0 -std=gnu23
+clang main.c -o hacklisp-0 -std=gnu23 -lreadline
