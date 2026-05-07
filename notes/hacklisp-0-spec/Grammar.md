@@ -11,7 +11,7 @@ atom: symbol | integer
 
 symbol: symbol-start symbol-middle*
 
-symbol-middle: All characters other than `(` `)`, integers, and whitespace
+symbol-start: All characters other than `(` `)`, integers, `.`, and whitespace
 
 symbol-middle: All characters other than `(` `)` and whitespace
 
