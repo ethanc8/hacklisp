@@ -63,6 +63,7 @@
 #define TokenType_RightParen 1
 #define TokenType_Symbol 2
 #define TokenType_Integer 3
+#define TokenType_Dot 4
 
 #define BOOL i16
 
@@ -409,6 +410,14 @@ function BOOL nextToken_() {
 	if(EQ(c, KEYCODE_RIGHTPAREN)) {
 		let curTok_length = 1;
 		let curTok_type = TokenType_RightParen;
+
+		let curTok_idx = curTok_idx + 1;
+		return YES;
+	}
+
+	if(EQ(c, KEYCODE_DOT)) {
+		let curTok_length = 1;
+		let curTok_type = TokenType_Dot;
 
 		let curTok_idx = curTok_idx + 1;
 		return YES;
