@@ -54,10 +54,6 @@
 
 #define Atom i16
 
-#define Error i16
-#define Error_OK 0
-#define Error_Syntax 1
-
 #define TokenType i16
 #define TokenType_LeftParen 0
 #define TokenType_RightParen 1
@@ -128,9 +124,6 @@ static STRING curTok_data;
 // The location of the token in the line that it was processed in
 static i16 curTok_idx;
 
-static Error error;
-
-
 
 // MARK - Function declarations
 
@@ -188,8 +181,6 @@ function void main() {
 	let line = 2048; // 2048 to 2111 (64 characters)
 	let curTok_data = 2112; // 2112 to 2175 (64 characters)
 
-	let error = Error_OK;
-
 	let curTok_idx = 0;
 
 	do Output.printString("HackLISP-0");
@@ -218,8 +209,6 @@ function void main() {
 #else
 int main(int argc, char** argv) {
 	let curTok_data = malloc(64);
-
-	let error = Error_OK;
 
 	let curTok_idx = 0;
 
