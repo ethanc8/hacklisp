@@ -64,6 +64,10 @@
 #define IS_ATOM(o) (o > stackBase)
 #define IS_PAIR(o) (o < stackBase)
 
+#define TAG_INTEGER -1
+
+#define IS_INTEGER(o) (EQ(o[0], TAG_INTEGER))
+
 #define TokenType i16
 #define TokenType_LeftParen 0
 #define TokenType_RightParen 1
@@ -163,6 +167,10 @@ static Array pairStackTop;
 
 	#define parseObject Main.parseObject_
 	#define parseList Main.parseList_
+
+	#define STRING_to_i16 Main.STRING_to_i16_
+
+	#define parseInteger Main.parseInteger_
 	#define internInteger Main.internInteger_
 	#define internSymbol Main.internSymbol_
 #else
@@ -200,8 +208,14 @@ static Array pairStackTop;
 	Object parseObject();
 	#define parseList parseList_
 	Object parseList();
+
+	#define STRING_to_i16 STRING_to_i16_
+	i16 STRING_to_i16(STRING s, i16 length);
+
+	#define parseInteger parseInteger_
+	Object parseInteger();
 	#define internInteger internInteger_
-	Object internInteger();
+	Object internInteger(i16 x);
 	#define internSymbol internSymbol_
 	Object internSymbol();
 #endif
@@ -455,11 +469,19 @@ function void processLine_() {
 	do nextToken();
 	let object = parseObject();
 
-	do print_literal("Symbol ");
-	do print_Array_as_ptr(object);
-	do print_literal(" value '");
-	do print_Array_as_string(object);
-	do print_literal("'");
+	if(IS_INTEGER(object)) {
+		do print_literal("Integer ");
+		do print_Array_as_ptr(object);
+		do print_literal(" value '");
+		do print_i16(object[1]);
+		do print_literal("'");
+	} else {
+		do print_literal("Symbol ");
+		do print_Array_as_ptr(object);
+		do print_literal(" value '");
+		do print_Array_as_string(object);
+		do print_literal("'");
+	}
 
 	do newline();
 
@@ -473,7 +495,7 @@ function Object parseObject_() {
 	}
 
 	if(EQ(curTok_type, TokenType_Integer)) {
-		return internInteger();
+		return parseInteger();
 	}
 
 	if(EQ(curTok_type, TokenType_Symbol)) {
@@ -490,10 +512,77 @@ function Object parseList_() {
 	return 0;
 }
 
+// Converts a STRING with some length to a nonnegtive integer.
+function i16 STRING_to_i16_(STRING s, i16 length) {
+	var int retval;
+	var int i;
+
+	let retval = 0;
+	let i = 0;
+
+	if(EQ(length, 0)) {
+		return 0;
+	}
+
+	while(i < length) {
+		// Check for nonnumeric characters
+		if(s[i] > 57) {
+			return retval;
+		}
+		if(s[i] < 48) {
+			return retval;
+		}
+		// ASCII 48 is "0"
+		let retval = retval * 10 + (s[i] - 48);
+
+		let i = i + 1;
+	}
+
+	return retval;
+}
+
 // Interns the integer at curTok onto the atom stack. 
-function Object internInteger_() {
-	do throw_error("parseList: Unimplemented stub");
-	return 0;
+function Object parseInteger_() {
+	return internInteger(STRING_to_i16(curTok_data, curTok_length));
+}
+
+// Interns the passed integer onto the atom stack. 
+function Object internInteger_(i16 x) {
+	var Array stackIdx;
+	var Array retval;
+	var BOOL shouldBreak;
+
+	// Try to find the integer in the atom stack.
+	let stackIdx = stackBase;
+	let shouldBreak = NO;
+	// Loop through the characters on the atom stack
+	while(LT(stackIdx, atomStackTop)) {
+		if(EQ(stackIdx[0], TAG_INTEGER)) {
+			if(EQ(stackIdx[1], x)) {
+				return stackIdx; // point to TAG_INTEGER
+			}
+			let stackIdx = stackIdx + 3; // skip tag + value + null
+		} else {
+			// skip symbol
+			while(NEQ(stackIdx[0], 0)) {
+				let stackIdx = stackIdx + 1;
+			}
+			let stackIdx = stackIdx + 1; // eat the null
+		}
+	}
+
+	let retval = atomStackTop;
+
+	// Let's intern the symbol now.
+	let atomStackTop[0] = TAG_INTEGER;
+	let atomStackTop[1] = x;
+
+	// Add null terminator
+	// We need this so that the symbol interning works properly.
+	let atomStackTop[2] = 0;
+
+	let atomStackTop = atomStackTop + 3;
+	return retval;
 }
 
 // Interns the symbol at curTok onto the atom stack. 
