@@ -54,19 +54,21 @@
 	typedef char* STRING;
 #endif
 
-// The address of the object.
-#define Object Array
+// The address of the object, relative to RAM.
+#define Object i16
 // same as car and cdr, for a pair
-#define head(o) o[0]
-#define tail(o) o[1]
+#define head(o) RAM[o]
+#define tail(o) RAM[o + 1]
 
 // checks if an object is on atom or pair stack
-#define IS_ATOM(o) (o > stackBase)
-#define IS_PAIR(o) (o < stackBase)
+#define IS_ATOM(o) (o > atomStackBase)
+#define IS_PAIR(o) (o < atomStackBase)
 
 #define TAG_INTEGER -1
 
-#define IS_INTEGER(o) (EQ(o[0], TAG_INTEGER))
+#define IS_INTEGER(o) (EQ(RAM[o], TAG_INTEGER))
+
+#define nilp(o) (EQ(o, atomStackBase))
 
 #define TokenType i16
 #define TokenType_LeftParen 0
@@ -141,16 +143,21 @@ static STRING curTok_data;
 // The location of the token in the line that it was processed in
 static i16 curTok_idx;
 
-static Array stackBase;
-static Array atomStackTop;
-static Array pairStackTop;
+// Reserve 2048~2239 (64*3 words) for interpreter internal state
+
+// 2240~16383 is left
+#define atomStackBase 9312
+#define pairStackBase 9310
+
+static i16 atomStackTop;
+static i16 pairStackTop;
 
 // MARK - Function declarations
 
 #if JACK
 	#define print_i16 Main.print_i16_
 	#define print_Array_as_ptr Main.print_Array_as_ptr_
-	#define print_Array_as_string Main.print_Array_as_string_
+	#define print_i16_ptr_as_string Main.print_i16_ptr_as_string_
 	#define print_char Main.print_char_
 	#define print_STRING Main.print_STRING_
 	#define print_STRING_length Main.print_STRING_length_
@@ -178,8 +185,8 @@ static Array pairStackTop;
 	void print_i16(i16 x);
 	#define print_Array_as_ptr print_Array_as_ptr_
 	void print_Array_as_ptr(Array x);
-	#define print_Array_as_string print_Array_as_string_
-	void print_Array_as_string(Array x);
+	#define print_i16_ptr_as_string print_i16_ptr_as_string_
+	void print_i16_ptr_as_string(i16 x);
 	#define print_char print_char_
 	void print_char(char c);
 	#define print_STRING print_STRING_
@@ -233,17 +240,14 @@ int main(int argc, char** argv) {
 		// Heap is 2048~16383
 		let RAM = 0;
 
-		// Reserve 2048~2239 (64*3 words) for interpreter internal state
 		let line = 2048; // 2048 to 2111 (64 characters)
 		let curTok_data = 2112; // 2112 to 2175 (64 characters)
 	#else
 		let curTok_data = malloc(64);
 	#endif
 
-	// 2240~16383 is left
-	let stackBase = RAM + 9312;
-	let atomStackTop = stackBase;
-	let pairStackTop = stackBase - 2;
+	let atomStackTop = atomStackBase;
+	let pairStackTop = pairStackBase;
 
 	// Intern "NIL"
 	let curTok_data[0] = KEYCODE_N;
@@ -307,13 +311,13 @@ function void print_Array_as_ptr_(Array x) {
 }
 
 // Prints the character c.
-function void print_Array_as_string_(Array s) {
+function void print_i16_ptr_as_string_(i16 s) {
 	var char c;
 	var i16 i;
 
 	let i = 0;
 
-	let c = s[i];
+	let c = RAM[s + i];
 	while(NEQ(c, 0)) {
 		#if JACK
 			do Output.printChar(c);
@@ -322,7 +326,7 @@ function void print_Array_as_string_(Array s) {
 		#endif
 
 		let i = i + 1;
-		let c = s[i];
+		let c = RAM[s + i];
 	}
 	return;
 }
@@ -471,15 +475,15 @@ function void processLine_() {
 
 	if(IS_INTEGER(object)) {
 		do print_literal("Integer ");
-		do print_Array_as_ptr(object);
+		do print_i16(object);
 		do print_literal(" value '");
-		do print_i16(object[1]);
+		do print_i16(RAM[object + 1]);
 		do print_literal("'");
 	} else {
 		do print_literal("Symbol ");
-		do print_Array_as_ptr(object);
+		do print_i16(object);
 		do print_literal(" value '");
-		do print_Array_as_string(object);
+		do print_i16_ptr_as_string(object);
 		do print_literal("'");
 	}
 
@@ -506,9 +510,18 @@ function Object parseObject_() {
 	return 0;
 }
 
+// Builds a pair with the given head and tail.
+function Object cons_(Object head, Object tail) {
+	var Object pair;
+
+	let head(pair) = head;
+	let tail(pair) = tail;
+}
+
 // Turns the list starting with curTok into a linked list.
 function Object parseList_() {
-	do throw_error("parseList: Unimplemented stub");
+	var Object pair;
+
 	return 0;
 }
 
@@ -548,23 +561,23 @@ function Object parseInteger_() {
 
 // Interns the passed integer onto the atom stack. 
 function Object internInteger_(i16 x) {
-	var Array stackIdx;
-	var Array retval;
+	var Object stackIdx;
+	var Object retval;
 	var BOOL shouldBreak;
 
 	// Try to find the integer in the atom stack.
-	let stackIdx = stackBase;
+	let stackIdx = atomStackBase;
 	let shouldBreak = NO;
 	// Loop through the characters on the atom stack
 	while(LT(stackIdx, atomStackTop)) {
-		if(EQ(stackIdx[0], TAG_INTEGER)) {
-			if(EQ(stackIdx[1], x)) {
+		if(EQ(RAM[stackIdx], TAG_INTEGER)) {
+			if(EQ(RAM[stackIdx + 1], x)) {
 				return stackIdx; // point to TAG_INTEGER
 			}
 			let stackIdx = stackIdx + 3; // skip tag + value + null
 		} else {
 			// skip symbol
-			while(NEQ(stackIdx[0], 0)) {
+			while(NEQ(RAM[stackIdx], 0)) {
 				let stackIdx = stackIdx + 1;
 			}
 			let stackIdx = stackIdx + 1; // eat the null
@@ -574,12 +587,12 @@ function Object internInteger_(i16 x) {
 	let retval = atomStackTop;
 
 	// Let's intern the symbol now.
-	let atomStackTop[0] = TAG_INTEGER;
-	let atomStackTop[1] = x;
+	let RAM[atomStackTop] = TAG_INTEGER;
+	let RAM[atomStackTop + 1] = x;
 
 	// Add null terminator
 	// We need this so that the symbol interning works properly.
-	let atomStackTop[2] = 0;
+	let RAM[atomStackTop + 2] = 0;
 
 	let atomStackTop = atomStackTop + 3;
 	return retval;
@@ -587,13 +600,13 @@ function Object internInteger_(i16 x) {
 
 // Interns the symbol at curTok onto the atom stack. 
 function Object internSymbol_() {
-	var Array stackIdx;
+	var Object stackIdx;
 	var i16 tokIdx;
-	var Array retval;
+	var Object retval;
 	var BOOL shouldBreak;
 
 	// Try to find the symbol in the atom stack.
-	let stackIdx = stackBase;
+	let stackIdx = atomStackBase;
 	let tokIdx = 0;
 	let shouldBreak = NO;
 	// Loop through the characters on the atom stack
@@ -604,7 +617,7 @@ function Object internSymbol_() {
 		// Loop through the token
 		while(LT(tokIdx, curTok_length) and (not shouldBreak)) {
 			// Break if mismatch
-			if(NEQ(stackIdx[0], curTok_data[tokIdx])) {
+			if(NEQ(RAM[stackIdx], curTok_data[tokIdx])) {
 				let shouldBreak = YES;
 			} else { // Then they match up to this point
 				// Advance both stackIdx and tokIdx
@@ -616,7 +629,7 @@ function Object internSymbol_() {
 		// If we got here without breaking, then it matched, so return the
 		// already-interned symbol
 		if(not shouldBreak) {
-			if(EQ(stackIdx[0], 0)) {
+			if(EQ(RAM[stackIdx], 0)) {
         return stackIdx - tokIdx;
 			}
 			// else: token is a prefix of this stack symbol, not a match
@@ -624,7 +637,7 @@ function Object internSymbol_() {
 		}
 
 		// Skip remainder of the non-matching symbol.
-		while(NEQ(stackIdx[0], 0) and LT(stackIdx, atomStackTop)) {
+		while(NEQ(RAM[stackIdx], 0) and LT(stackIdx, atomStackTop)) {
 			let stackIdx = stackIdx + 1;
 		}
 
@@ -638,7 +651,7 @@ function Object internSymbol_() {
 
 	// Let's intern the symbol now.
 	while(LT(tokIdx, curTok_length)) {
-		let stackIdx[0] = curTok_data[tokIdx];
+		let RAM[stackIdx] = curTok_data[tokIdx];
 
 		// Advance both stackIdx and tokIdx
 		let stackIdx = stackIdx + 1;
@@ -646,7 +659,7 @@ function Object internSymbol_() {
 	}
 
 	// Add null terminator
-	let stackIdx[0] = 0;
+	let RAM[stackIdx] = 0;
 
 	let atomStackTop = stackIdx + 1;
 	return retval;
