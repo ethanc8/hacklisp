@@ -183,7 +183,7 @@ static Array pairStackTop;
 
 	#define print_literal print_literal_
 	void print_literal(STRING s);
-	#define println_literal print_literal_
+	#define println_literal println_literal_
 	void println_literal(STRING s);
 	#define throw_error throw_error_
 	_Noreturn void throw_error(STRING s);
@@ -242,7 +242,6 @@ int main(int argc, char** argv) {
 
 	// User interface
 	do println_literal("HackLISP-0");
-	do newline();
 
 	while(YES) {
 		#if JACK
