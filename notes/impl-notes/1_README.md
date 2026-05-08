@@ -7,6 +7,7 @@ The following sources are used:
 * SectorLISP
   * <https://justine.lol/sectorlisp2/>
   * The C source code: <https://github.com/jart/sectorlisp/blob/main/lisp.c>
+  * "Friendly" version: <https://github.com/jart/sectorlisp/blob/friendly/lisp.js>
 * tinylisp:
   * <https://github.com/Robert-van-Engelen/tinylisp>
   * [Article \-- "Lisp in 99 lines of C and how to write one yourself"](https://raw.githubusercontent.com/Robert-van-Engelen/tinylisp/main/tinylisp.pdf) 

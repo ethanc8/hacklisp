@@ -61,13 +61,14 @@
 #define tail(o) RAM[o + 1]
 
 // checks if an object is on atom or pair stack
-#define IS_ATOM(o) (o > atomStackBase)
+#define IS_ATOM(o) (o > pairStackBase)
 #define IS_PAIR(o) (o < atomStackBase)
 
 #define TAG_INTEGER -1
 
 #define IS_INTEGER(o) (EQ(RAM[o], TAG_INTEGER))
 
+#define NIL atomStackBase
 #define nilp(o) (EQ(o, atomStackBase))
 
 #define TokenType i16
@@ -172,7 +173,10 @@ static Object pairStackTop;
 	#define processLine Main.processLine_
 	#define nextToken Main.nextToken_
 
+	#define printObject Main.printObject_
 	#define parseObject Main.parseObject_
+
+	#define cons Main.cons_
 	#define parseList Main.parseList_
 
 	#define STRING_to_i16 Main.STRING_to_i16_
@@ -211,8 +215,16 @@ static Object pairStackTop;
 	#define processLine processLine_
 	void processLine();
 
+	#define printObject printObject_
+	void printObject(Object o);
+
 	#define parseObject parseObject_
 	Object parseObject();
+
+	#define parseObject parseObject_
+	Object parseObject();
+	#define cons cons_
+	Object cons(Object head, Object tail);
 	#define parseList parseList_
 	Object parseList();
 
@@ -473,23 +485,41 @@ function void processLine_() {
 	do nextToken();
 	let object = parseObject();
 
-	if(IS_INTEGER(object)) {
-		do print_literal("Integer ");
-		do print_i16(object);
-		do print_literal(" value '");
-		do print_i16(RAM[object + 1]);
-		do print_literal("'");
-	} else {
-		do print_literal("Symbol ");
-		do print_i16(object);
-		do print_literal(" value '");
-		do print_i16_ptr_as_string(object);
-		do print_literal("'");
-	}
+	do printObject(object);
+
+	// if(IS_INTEGER(object)) {
+	// 	do print_literal("Integer ");
+	// 	do print_i16(object);
+	// 	do print_literal(" value '");
+	// 	do print_i16(RAM[object + 1]);
+	// 	do print_literal("'");
+	// } else {
+	// 	do print_literal("Symbol ");
+	// 	do print_i16(object);
+	// 	do print_literal(" value '");
+	// 	do print_i16_ptr_as_string(object);
+	// 	do print_literal("'");
+	// }
 
 	do newline();
 
 	return;
+}
+
+function void printObject_(Object o) {
+	if(IS_ATOM(o)) {
+		if(IS_INTEGER(o)) {
+			do print_i16(RAM[o + 1]);
+		} else {
+			do print_i16_ptr_as_string(o);
+		}
+	} else {
+		do print_literal("(");
+		do printObject(head(o));
+		do print_literal(" . ");
+		do printObject(tail(o));
+		do print_literal(")");
+	}
 }
 
 // Returns the address of the object starting with curTok.
@@ -525,10 +555,34 @@ function Object cons_(Object head, Object tail) {
 }
 
 // Turns the list starting with curTok into a linked list.
+// curTok can either be `(`, or part of a previous list.
+// It will advance curTok to the next token, and treat that next token
+// as the head of the list.
+// At the end of this function, curTok will be `)`.
 function Object parseList_() {
-	var Object pair;
+	var Object tail;
 
-	return 0;
+	// curTok is `(`
+	do nextToken();
+
+	// curTok is now the head.
+
+	// If it's a dot, return the thing after the dot.
+	if(EQ(curTok_type, TokenType_Dot)) {
+		do nextToken();
+		let tail = parseObject();
+		do nextToken(); // Advance to `)`
+		return tail;
+	}
+
+	// If it's a right paren, this must be the tail of some list
+	// so we return NIL.
+	// Empty lists are equivalent to NIL.
+	if(EQ(curTok_type, TokenType_RightParen)) {
+		return NIL;
+	}
+
+	return cons(parseObject(), parseList());
 }
 
 // Converts a STRING with some length to a nonnegtive integer.
