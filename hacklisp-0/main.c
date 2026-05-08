@@ -149,8 +149,8 @@ static i16 curTok_idx;
 #define atomStackBase 9312
 #define pairStackBase 9310
 
-static i16 atomStackTop;
-static i16 pairStackTop;
+static Object atomStackTop;
+static Object pairStackTop;
 
 // MARK - Function declarations
 
@@ -514,8 +514,14 @@ function Object parseObject_() {
 function Object cons_(Object head, Object tail) {
 	var Object pair;
 
+	let pair = pairStackTop;
+
 	let head(pair) = head;
 	let tail(pair) = tail;
+
+	let pairStackTop = pairStackTop - 2;
+
+	return pair;
 }
 
 // Turns the list starting with curTok into a linked list.
