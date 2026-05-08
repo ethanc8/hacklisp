@@ -520,6 +520,8 @@ function void printObject_(Object o) {
 		do printObject(tail(o));
 		do print_literal(")");
 	}
+
+	return;
 }
 
 // Returns the address of the object starting with curTok.
