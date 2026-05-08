@@ -565,26 +565,42 @@ function Object parseList_() {
 	var Object tail;
 
 	// curTok is `(`
-	do nextToken();
+	if(nextToken()) {
+		// curTok is now the head.
 
-	// curTok is now the head.
+		// If it's a dot, return the thing after the dot.
+		if(EQ(curTok_type, TokenType_Dot)) {
+			if(nextToken()) {
+				let tail = parseObject();
+				if(nextToken()) {
+					if(EQ(curTok_type, TokenType_RightParen)) {
+						return tail;
+					} else {
+						do throw_error("parseList: Dotted list must end with closing parenthesis after the tail");
+						return NIL;
+					}
+				} else {
+					do throw_error("parseList: Dotted list must end with closing parenthesis after the tail");
+					return NIL;
+				}
+			} else {
+				do throw_error("parseList: There is nothing after the dot");
+				return NIL;
+			}
+		}
 
-	// If it's a dot, return the thing after the dot.
-	if(EQ(curTok_type, TokenType_Dot)) {
-		do nextToken();
-		let tail = parseObject();
-		do nextToken(); // Advance to `)`
-		return tail;
-	}
+		// If it's a right paren, this must be the tail of some list
+		// so we return NIL.
+		// Empty lists are equivalent to NIL.
+		if(EQ(curTok_type, TokenType_RightParen)) {
+			return NIL;
+		}
 
-	// If it's a right paren, this must be the tail of some list
-	// so we return NIL.
-	// Empty lists are equivalent to NIL.
-	if(EQ(curTok_type, TokenType_RightParen)) {
+		return cons(parseObject(), parseList());
+	} else {
+		do throw_error("parseList: Reached end of input; perhaps you forgot a closing parenthesis?");
 		return NIL;
 	}
-
-	return cons(parseObject(), parseList());
 }
 
 // Converts a STRING with some length to a nonnegtive integer.
