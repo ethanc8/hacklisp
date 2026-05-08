@@ -79,9 +79,9 @@ Following SectorLISP, we choose some arbitrary point in memory as `NIL`. We have
 
 Pairs are stored on the pair stack, as two consecutive tagged words; one car and one cdr. Each of its two words are pointers to elsewhere on either on the pair stack or the atom stack.
 
-Symbols are stored on the atom stack as linked-lists of characters. The car is the character, and the cdr is the pointer to the next item. If the cdr is `NIL`, then it's the end of the linked-list.
+Symbols are stored on the atom stack as null-terminated strings of characters.
 
-Integers are stored on the atom stack as just an integer. The car is the integer, and the cdr is `NIL`. Thus, integers and single-character symbols are indistinguishable. In fact, to make the implementation simpler, adding an integer to a string will probably just return the integer plus the first character of the string.
+Integers are stored on the atom stack as the integer and then a null. Thus, integers and single-character symbols are indistinguishable. In fact, to make the implementation simpler, adding an integer to a string will probably just return the integer plus the first character of the string.
 
 ### Past bad idea -- tagged pointer
 

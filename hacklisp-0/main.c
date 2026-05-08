@@ -1,6 +1,8 @@
 // MARK - Basic syntax
 #if JACK
 	#define i16 int
+	#define _Noreturn
+
 	class Main {
 #else
 	#include <stdio.h>
@@ -52,7 +54,15 @@
 	typedef char* STRING;
 #endif
 
-#define Atom i16
+// The address of the object.
+#define Object Array
+// same as car and cdr, for a pair
+#define head(o) o[0]
+#define tail(o) o[1]
+
+// checks if an object is on atom or pair stack
+#define IS_ATOM(o) (o > stackBase)
+#define IS_PAIR(o) (o < stackBase)
 
 #define TokenType i16
 #define TokenType_LeftParen 0
@@ -82,6 +92,9 @@
 #define IS_DIGIT(c) (GT(c, 47) and LT(c, 58))
 
 #define KEYCODE_A 65
+#define KEYCODE_N 78
+#define KEYCODE_I 73
+#define KEYCODE_L 76
 #define KEYCODE_Z 90
 #define IS_UPPER(c) (GT(c, 64) and LT(c, 91))
 
@@ -124,10 +137,16 @@ static STRING curTok_data;
 // The location of the token in the line that it was processed in
 static i16 curTok_idx;
 
+static Array stackBase;
+static Array atomStackTop;
+static Array pairStackTop;
 
 // MARK - Function declarations
 
 #if JACK
+	#define print_i16 Main.print_i16_
+	#define print_Array_as_ptr Main.print_Array_as_ptr_
+	#define print_Array_as_string Main.print_Array_as_string_
 	#define print_char Main.print_char_
 	#define print_STRING Main.print_STRING_
 	#define print_STRING_length Main.print_STRING_length_
@@ -142,7 +161,17 @@ static i16 curTok_idx;
 	#define processLine Main.processLine_
 	#define nextToken Main.nextToken_
 
+	#define parseObject Main.parseObject_
+	#define parseList Main.parseList_
+	#define internInteger Main.internInteger_
+	#define internSymbol Main.internSymbol_
 #else
+	#define print_i16 print_i16_
+	void print_i16(i16 x);
+	#define print_Array_as_ptr print_Array_as_ptr_
+	void print_Array_as_ptr(Array x);
+	#define print_Array_as_string print_Array_as_string_
+	void print_Array_as_string(Array x);
 	#define print_char print_char_
 	void print_char(char c);
 	#define print_STRING print_STRING_
@@ -157,7 +186,7 @@ static i16 curTok_idx;
 	#define println_literal print_literal_
 	void println_literal(STRING s);
 	#define throw_error throw_error_
-	void throw_error(STRING s);
+	_Noreturn void throw_error(STRING s);
 
 	#define newline newline_
 	void newline();
@@ -166,63 +195,124 @@ static i16 curTok_idx;
 	BOOL nextToken();
 	#define processLine processLine_
 	void processLine();
-	#define nextToken nextToken_
-	BOOL nextToken();
+
+	#define parseObject parseObject_
+	Object parseObject();
+	#define parseList parseList_
+	Object parseList();
+	#define internInteger internInteger_
+	Object internInteger();
+	#define internSymbol internSymbol_
+	Object internSymbol();
 #endif
 
 // MARK - Main function
 #if JACK
 function void main() {
+#else
+int main(int argc, char** argv) {
+#endif
+	#if JACK
+		var char c;
+		var i16 i;
+
+		// Heap is 2048~16383
+		let RAM = 0;
+
+		// Reserve 2048~2239 (64*3 words) for interpreter internal state
+		let line = 2048; // 2048 to 2111 (64 characters)
+		let curTok_data = 2112; // 2112 to 2175 (64 characters)
+	#else
+		let curTok_data = malloc(64);
+	#endif
+
+	// 2240~16383 is left
+	let stackBase = RAM + 9312;
+	let atomStackTop = stackBase;
+	let pairStackTop = stackBase - 2;
+
+	// Intern "NIL"
+	let curTok_data[0] = KEYCODE_N;
+	let curTok_data[1] = KEYCODE_I;
+	let curTok_data[2] = KEYCODE_L;
+
+	let curTok_length = 3;
+
+	do internSymbol();
+
+	// User interface
+	do println_literal("HackLISP-0");
+	do newline();
+
+	while(YES) {
+		#if JACK
+			do Output.printString("> ");
+			let i = 0;
+
+			let c = Keyboard.readChar();
+			while(NEQ(c, KEYCODE_NEWLINE) and LEQ(i, 62)) {
+				let line[i] = c;
+
+				let i = i + 1;
+				let c = Keyboard.readChar();
+			}
+			let line[i] = 0;
+			do Output.println();
+		#else
+			let line = readline("> ");
+		#endif
+
+		do processLine();
+	}
+	#if JACK
+		return;
+	#else
+		return 0;
+	#endif
+}
+
+// MARK - Normal functions
+
+// Prints the character c.
+function void print_i16_(i16 x) {
+	#if JACK
+		do Output.printInt(x);
+	#else
+		do printf("%"PRIi16, x);
+	#endif
+	return;
+}
+
+// Prints the character c.
+function void print_Array_as_ptr_(Array x) {
+	#if JACK
+		do Output.printInt(x);
+	#else
+		do printf("%p", x);
+	#endif
+	return;
+}
+
+// Prints the character c.
+function void print_Array_as_string_(Array s) {
 	var char c;
 	var i16 i;
 
-	// 2048 is the base of the heap
-	let RAM = 0;
-	let line = 2048; // 2048 to 2111 (64 characters)
-	let curTok_data = 2112; // 2112 to 2175 (64 characters)
+	let i = 0;
 
-	let curTok_idx = 0;
+	let c = s[i];
+	while(NEQ(c, 0)) {
+		#if JACK
+			do Output.printChar(c);
+		#else
+			do putchar(c);
+		#endif
 
-	do Output.printString("HackLISP-0");
-	do Output.println();
-
-	while(YES) {
-		do Output.printString("> ");
-		let i = 0;
-
-		let c = Keyboard.readChar();
-		while(NEQ(c, KEYCODE_NEWLINE) and LEQ(i, 62)) {
-			let line[i] = c;
-
-			let i = i + 1;
-			let c = Keyboard.readChar();
-		}
-		let line[i] = 0;
-		do Output.println();
-
-		let curTok_idx = 0;
-
-		do processLine();
+		let i = i + 1;
+		let c = s[i];
 	}
 	return;
 }
-#else
-int main(int argc, char** argv) {
-	let curTok_data = malloc(64);
-
-	let curTok_idx = 0;
-
-	do printf("HackLISP-0\n");
-	while(YES) {
-		let line = readline("> ");
-		let curTok_idx = 0;
-
-		do processLine();
-	}
-}
-#endif
-
-// MARK - Normal functions
 
 // Prints the character c.
 function void print_char_(char c) {
@@ -238,7 +328,7 @@ function void print_char_(char c) {
 function void print_STRING_(STRING s) {
 	#if JACK
 		var char c;
-		var int i;
+		var i16 i;
 
 		let i = 0;
 
@@ -250,7 +340,7 @@ function void print_STRING_(STRING s) {
 			let c = s[i];
 		}
 	#else
-		do puts(s);
+		do fputs(s, stdout);
 	#endif
 	return;
 }
@@ -258,7 +348,7 @@ function void print_STRING_(STRING s) {
 // Prints the string s of the given length
 function void print_STRING_length_(STRING s, i16 length) {
 	var char c;
-	var int i;
+	var i16 i;
 
 	let i = 0;
 
@@ -280,7 +370,7 @@ function void print_STRING_length_(STRING s, i16 length) {
 function void println_STRING_(STRING s) {
 	#if JACK
 		var char c;
-		var int i;
+		var i16 i;
 
 		let i = 0;
 
@@ -294,7 +384,7 @@ function void println_STRING_(STRING s) {
 
 		do Output.println();
 	#else
-		do puts(s);
+		do fputs(s, stdout);
 		do putchar('\n');
 	#endif
 	return;
@@ -314,11 +404,11 @@ function void println_STRING_(STRING s) {
 	}
 #else
 	function void print_literal_(STRING s) {
-		do puts(s);
+		do fputs(s, stdout);
 		return;
 	}
 	function void println_literal_(STRING s) {
-		do puts(s);
+		do fputs(s, stdout);
 		do putchar('\n');
 		return;
 	}
@@ -338,7 +428,6 @@ function void println_STRING_(STRING s) {
 	function void throw_error_(STRING s) {
 		do fprintf(stderr, "\nERROR: %s\n", s);
 		do exit(1);
-		return;
 	}
 #endif
 
@@ -354,16 +443,125 @@ function void newline_() {
 
 // Processes the line stored in the global variable `line`.
 function void processLine_() {
-	while(nextToken()) {
-		// Debugging the tokenizer
-		do print_STRING_length(curTok_data, curTok_length);
-		do print_char(KEYCODE_SPACE);
-		// printf("type %"PRIi16" value `%.*s`\n", curTok_type, curTok_length, curTok_data);
-	}
+	var Object object;
+
+	let curTok_idx = 0;
+	// // Debugging the tokenizer
+	// while(nextToken()) {
+	// 	do print_STRING_length(curTok_data, curTok_length);
+	// 	do print_char(KEYCODE_SPACE);
+	// 	// printf("type %"PRIi16" value `%.*s`\n", curTok_type, curTok_length, curTok_data);
+	// }
+
+	do nextToken();
+	let object = parseObject();
+
+	do print_literal("Symbol ");
+	do print_Array_as_ptr(object);
+	do print_literal(" value '");
+	do print_Array_as_string(object);
+	do print_literal("'");
 
 	do newline();
 
 	return;
+}
+
+// Returns the address of the object starting with curTok.
+function Object parseObject_() {
+	if(EQ(curTok_type, TokenType_LeftParen)) {
+		return parseList();
+	}
+
+	if(EQ(curTok_type, TokenType_Integer)) {
+		return internInteger();
+	}
+
+	if(EQ(curTok_type, TokenType_Symbol)) {
+		return internSymbol();
+	}
+
+	do throw_error("parseObject: Object must be a list, integer, or symbol");
+	return 0;
+}
+
+// Turns the list starting with curTok into a linked list.
+function Object parseList_() {
+	do throw_error("parseList: Unimplemented stub");
+	return 0;
+}
+
+// Interns the integer at curTok onto the atom stack. 
+function Object internInteger_() {
+	do throw_error("parseList: Unimplemented stub");
+	return 0;
+}
+
+// Interns the symbol at curTok onto the atom stack. 
+function Object internSymbol_() {
+	var Array stackIdx;
+	var i16 tokIdx;
+	var Array retval;
+	var BOOL shouldBreak;
+
+	// Try to find the symbol in the atom stack.
+	let stackIdx = stackBase;
+	let tokIdx = 0;
+	let shouldBreak = NO;
+	// Loop through the characters on the atom stack
+	while(LT(stackIdx, atomStackTop)) {
+		let tokIdx = 0;
+		let shouldBreak = NO;
+
+		// Loop through the token
+		while(LT(tokIdx, curTok_length) and (not shouldBreak)) {
+			// Break if mismatch
+			if(NEQ(stackIdx[0], curTok_data[tokIdx])) {
+				let shouldBreak = YES;
+			} else { // Then they match up to this point
+				// Advance both stackIdx and tokIdx
+				let stackIdx = stackIdx + 1;
+				let tokIdx = tokIdx + 1;
+			}
+		}
+
+		// If we got here without breaking, then it matched, so return the
+		// already-interned symbol
+		if(not shouldBreak) {
+			if(EQ(stackIdx[0], 0)) {
+        return stackIdx - tokIdx;
+			}
+			// else: token is a prefix of this stack symbol, not a match
+			// fall through to skip
+		}
+
+		// Skip remainder of the non-matching symbol.
+		while(NEQ(stackIdx[0], 0) and LT(stackIdx, atomStackTop)) {
+			let stackIdx = stackIdx + 1;
+		}
+
+		// stackIdx now points to the last null in this symbol. Increment it by 1 to point to the next thing.
+		let stackIdx = stackIdx + 1;
+	}
+
+	// If we got here, there were no matches.
+	let tokIdx = 0;
+	let retval = stackIdx;
+
+	// Let's intern the symbol now.
+	while(LT(tokIdx, curTok_length)) {
+		let stackIdx[0] = curTok_data[tokIdx];
+
+		// Advance both stackIdx and tokIdx
+		let stackIdx = stackIdx + 1;
+		let tokIdx = tokIdx + 1;
+	}
+
+	// Add null terminator
+	let stackIdx[0] = 0;
+
+	let atomStackTop = stackIdx + 1;
+	return retval;
 }
 
 // Starts tokenizing line at curTok_idx

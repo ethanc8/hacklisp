@@ -1,11 +1,11 @@
 # Grammar
 
 ```
-program: element*
+program: object*
 
-element: list | `.` | atom
+object: list | atom
 
-list: `(` element* `)`
+list: `(` (object | `.`)* `)`
 
 atom: symbol | integer
 
