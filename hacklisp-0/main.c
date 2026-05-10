@@ -239,6 +239,9 @@ static i16 curTok_idx;
 static Object atomStackTop;
 static Object pairStackTop;
 
+// An alist containing the builtin constants.
+static Object builtins;
+
 // MARK - Function declarations
 
 #if JACK
@@ -419,6 +422,20 @@ int main(int argc, char** argv) {
 	let RAM[atomStackBase + 39] = KEYCODE_i;
 	let RAM[atomStackBase + 40] = KEYCODE_l;
 	let RAM[atomStackBase + 41] = 0;
+
+	let atomStackTop = atomStackBase + 42;
+
+	// (
+	//   (NIL . NIL)
+	//   (TRUE . TRUE)
+	// )
+	let builtins = cons(
+		cons(NIL, NIL),
+		cons(
+			cons(TRUE, TRUE),
+			NIL
+		)
+	);
 	
 
 	let curTok_length = 3;
@@ -627,7 +644,8 @@ function void newline_() {
 
 // Processes the line stored in the global variable `line`.
 function void processLine_() {
-	var Object object;
+	var Object expr;
+	var Object env;
 
 	let curTok_idx = 0;
 	// // Debugging the tokenizer
@@ -638,23 +656,10 @@ function void processLine_() {
 	// }
 
 	do nextToken();
-	let object = parseObject();
+	let expr = parseObject();
 
-	do printObject(object);
-
-	// if(IS_INTEGER(object)) {
-	// 	do print_literal("Integer ");
-	// 	do print_i16(object);
-	// 	do print_literal(" value '");
-	// 	do print_i16(GET_INTEGER_VALUE(object));
-	// 	do print_literal("'");
-	// } else {
-	// 	do print_literal("Symbol ");
-	// 	do print_i16(object);
-	// 	do print_literal(" value '");
-	// 	do print_i16_ptr_as_string(object);
-	// 	do print_literal("'");
-	// }
+	// do printObject(eval(expr, builtins));
+	do printObject(expr);
 
 	do newline();
 
@@ -664,11 +669,23 @@ function void processLine_() {
 function void printObject_(Object o) {
 	if(IS_ATOM(o)) {
 		if(IS_INTEGER(o)) {
+			// do print_literal("[INTEGER at ");
+			// do print_i16(o);
+			// do print_literal("]");
+
 			do print_i16(GET_INTEGER_VALUE(o));
 		} else {
+			// do print_literal("[SYMBOL at ");
+			// do print_i16(o);
+			// do print_literal("]");
+
 			do print_i16_ptr_as_string(o);
 		}
 	} else {
+		// do print_literal("[LIST at ");
+		// do print_i16(o);
+		// do print_literal("]");
+
 		do print_literal("(");
 		do printObject(head(o));
 		do print_literal(" . ");
@@ -1041,7 +1058,7 @@ function Object pairlis_(Object x, Object y, Object a) {
 // env is an alist (association list) -- a list of (key . value) pairs
 function Object eval_(Object e, Object env) {
   if (IS_NIL(e)) return e;
-	if (IS_INTEGER(e)) return GET_INTEGER_VALUE(e);
+	if (IS_INTEGER(e)) return e;
   if (IS_ATOM(e)) return lookup(e, env);
 
 	// If e is a list (quote ___), return ___.
@@ -1065,17 +1082,41 @@ function Object apply_(Object f, Object x, Object env) {
 	//     (lambda ARGS RETVAL)
 	//   then run:
 	//     eval[RETVAL; pairlis[ARGS; x; a]]
-	//   i.e. we use pairlis to 
+	//   i.e. we use pairlis to bind the args in the environment,
+	//   then evaluate it.
 	// 
 	// We ignore checking if the first thing is the keyword "lambda"
 	// in order to save on code size and runtime.
-  if (IS_PAIR(f)) return eval(head(tail(tail(f))), pairlis(head(tail(f)), x, env));
-  // TODO the below
-	if (f == kEq)   return head(x) == head(tail(x));
-  if (f == kCons) return cons(head(x), head(tail(x)));
-  if (f == kAtom) return head(x) >= 0;
-  if (f == kHead) return head(head(x));
-  if (f == kTail) return tail(head(x));
+  if (IS_PAIR(f)) {
+		return eval(head(tail(tail(f))), pairlis(head(tail(f)), x, env));
+	}
+
+	// Otherwise it's probably a builtin.
+	if (f == kEq) {
+		if(EQ(head(x), head(tail(x)))) {
+			return TRUE;
+		} else {
+			return NIL;
+		}
+	}
+  if (f == kCons) {
+		return cons(head(x), head(tail(x)));
+	}
+  if (f == kAtom) {
+		if(IS_ATOM(x)) {
+			return TRUE;
+		} else {
+			return NIL;
+		}
+	}
+  if (f == kHead) {
+		return head(head(x));
+	}
+  if (f == kTail) {
+		return tail(head(x));
+	}
+
+	// Otherwise assume f is a variable bound to some function or builtin.
   return apply(lookup(f, env), x, env);
 }
 
