@@ -71,6 +71,7 @@
 #define GET_INTEGER_VALUE(o) (RAM[o + 1])
 
 #define IS_NIL(o) (EQ(o, atomStackBase))
+#define IS_NONNIL(o) (NEQ(o, atomStackBase))
 
 #define TokenType i16
 #define TokenType_LeftParen 0
@@ -263,6 +264,8 @@ static Object builtins;
 	#define nextToken Main.nextToken_
 
 	#define printObject Main.printObject_
+	#define debugObject Main.debugObject_
+
 	#define parseObject Main.parseObject_
 
 	#define cons Main.cons_
@@ -313,6 +316,8 @@ static Object builtins;
 
 	#define printObject printObject_
 	void printObject(Object o);
+	#define debugObject debugObject_
+	void debugObject(Object o);
 
 	#define parseObject parseObject_
 	Object parseObject();
@@ -658,8 +663,8 @@ function void processLine_() {
 	do nextToken();
 	let expr = parseObject();
 
-	// do printObject(eval(expr, builtins));
-	do printObject(expr);
+	do printObject(eval(expr, builtins));
+	// do printObject(expr);
 
 	do newline();
 
@@ -669,27 +674,45 @@ function void processLine_() {
 function void printObject_(Object o) {
 	if(IS_ATOM(o)) {
 		if(IS_INTEGER(o)) {
-			// do print_literal("[INTEGER at ");
-			// do print_i16(o);
-			// do print_literal("]");
-
 			do print_i16(GET_INTEGER_VALUE(o));
 		} else {
-			// do print_literal("[SYMBOL at ");
-			// do print_i16(o);
-			// do print_literal("]");
-
 			do print_i16_ptr_as_string(o);
 		}
 	} else {
-		// do print_literal("[LIST at ");
-		// do print_i16(o);
-		// do print_literal("]");
-
 		do print_literal("(");
 		do printObject(head(o));
 		do print_literal(" . ");
 		do printObject(tail(o));
+		do print_literal(")");
+	}
+
+	return;
+}
+
+function void debugObject_(Object o) {
+	if(IS_ATOM(o)) {
+		if(IS_INTEGER(o)) {
+			do print_literal("[INTEGER at ");
+			do print_i16(o);
+			do print_literal("]");
+
+			do print_i16(GET_INTEGER_VALUE(o));
+		} else {
+			do print_literal("[SYMBOL at ");
+			do print_i16(o);
+			do print_literal("]");
+
+			do print_i16_ptr_as_string(o);
+		}
+	} else {
+		do print_literal("[LIST at ");
+		do print_i16(o);
+		do print_literal("]");
+
+		do print_literal("(");
+		do debugObject(head(o));
+		do print_literal(" . ");
+		do debugObject(tail(o));
 		do print_literal(")");
 	}
 
@@ -999,23 +1022,53 @@ function BOOL nextToken_() {
 	return YES;
 }
 
-// TODO document this and make it work in Jack
-function Object evcon_(Object c, Object a) {
-  if (eval(head(head(c)), a)) {
-    return eval(head(tail(head(c))), a);
+// Evaluates a conditional expression c, in the environment env.
+// c is a list of (TEST BODY) [non-dotted] lists
+//   i.e. (TEST . (BODY . NIL))
+// env is, of course, an environment specified as an alist.
+//
+// evcon iterates in order through the elements of c and 
+// evals the first expression of each pair. If it returns a nonnull
+// value, the body is evaluated and returned. 
+function Object evcon_(Object c, Object env) {
+
+	// This is reversed, because it's cheaper to check for nil
+	// than to check for nonnil.
+	// i.e. the nil branch is what was the else branch in LISP 1.5
+  if(IS_NIL(eval(head(head(c)), env))) {
+		// T -> evcon[cdr[c];a]]
+		// If it's nil, go on to the next expression
+		return evcon(tail(c), env);
   } else {
-    return evcon(tail(c), a);
+		// [eval[caar[c];a] -> eval[cadar[c];a];
+		// The result is nonnil, so evaluate and return the BODY.
+    return eval(head(tail(head(c))), env);
   }
 }
 
-// TODO document this and make it work in Jack
-function Object evlis_(Object m, Object a) {
-  return m ? cons(eval(head(m), a),
-                  evlis(tail(m), a)) : m;
+// Loops through each expression in exprs and evaluates it.
+// Returns a list of the evaluated expressions.
+// 
+// Examples:
+//   (evlis '(a b c) '((a . 1)(b . 2)(c . 3)) -> '(1 2 3)
+function Object evlis_(Object exprs, Object env) {
+	// LISP 1.5:
+	//   evlis[m;a] = [null[m] -> NIL;
+	//                 T -> cons [eval[car [m];a];evlis[cdr [m];a]]]
+	if(IS_NIL(exprs)) {
+		return NIL;
+	} else {
+		// Evaluate the first expression, then
+		// hand the tail off to evlis.
+		return cons(eval(head(exprs), env),
+                  evlis(tail(exprs), env));
+	}
 }
 
 // Searches an alist for a given key.
 // Returns the value for said key.
+//
+// Called "assoc" in some implementations.
 function Object lookup_(Object key, Object alist) {
 	// If the first key-value pair in alist matches,
 	// then return the value.
@@ -1057,16 +1110,16 @@ function Object pairlis_(Object x, Object y, Object a) {
 // Evaluates the expression e in the environment env.
 // env is an alist (association list) -- a list of (key . value) pairs
 function Object eval_(Object e, Object env) {
-  if (IS_NIL(e)) return e;
-	if (IS_INTEGER(e)) return e;
-  if (IS_ATOM(e)) return lookup(e, env);
+  if (IS_NIL(e)) { return e; }
+	if (IS_INTEGER(e)) { return e; }
+  if (IS_ATOM(e)) { return lookup(e, env); }
 
 	// If e is a list (quote ___), return ___.
 	// We use head(tail(e)) because it's actually (quote . (___ . NIL))
-  if (EQ(head(e), kQuote)) return head(tail(e));
+  if (EQ(head(e), kQuote)) { return head(tail(e)); }
 
 	// If e is a conditional, punt to evcon to evaluate it.
-  if (EQ(head(e), kCond)) return evcon(tail(e), env);
+  if (EQ(head(e), kCond)) { return evcon(tail(e), env); }
 
 	// If the above fails,
 	//   head(e) is the first item (so the function name)
@@ -1077,6 +1130,15 @@ function Object eval_(Object e, Object env) {
 
 // Applies the function f to the argument x, in the environment env.
 function Object apply_(Object f, Object x, Object env) {
+	// do print_literal("Running (apply f:");
+	// do printObject(f);
+	// do print_literal(" x:");
+	// do printObject(x);
+	// do print_literal(" env:");
+	// do printObject(env);
+	// do newline();
+
+
 	// If f is not a builtin,
 	//   assume f is a lambda-expression of form
 	//     (lambda ARGS RETVAL)
@@ -1103,7 +1165,7 @@ function Object apply_(Object f, Object x, Object env) {
 		return cons(head(x), head(tail(x)));
 	}
   if (f == kAtom) {
-		if(IS_ATOM(x)) {
+		if(IS_ATOM(head(x))) {
 			return TRUE;
 		} else {
 			return NIL;
