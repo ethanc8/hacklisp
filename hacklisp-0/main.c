@@ -67,9 +67,10 @@
 #define TAG_INTEGER -1
 
 #define IS_INTEGER(o) (EQ(RAM[o], TAG_INTEGER))
+// Gets the value of the integer pointed to by o.
+#define GET_INTEGER_VALUE(o) (RAM[o + 1])
 
-#define NIL atomStackBase
-#define nilp(o) (EQ(o, atomStackBase))
+#define IS_NIL(o) (EQ(o, atomStackBase))
 
 #define TokenType i16
 #define TokenType_LeftParen 0
@@ -90,24 +91,109 @@
 
 // Keycodes - ASCII 32 to 127
 #define KEYCODE_SPACE 32
+#define KEYCODE_EXCL 33
+#define KEYCODE_QUOT 34
+#define KEYCODE_NUM 35
+#define KEYCODE_DOLLAR 36
+#define KEYCODE_PERCENT 37
+#define KEYCODE_AMPERSAND 38
+#define KEYCODE_APOSTROPHE 39
 #define KEYCODE_LEFTPAREN 40
 #define KEYCODE_RIGHTPAREN 41
+#define KEYCODE_ASTERISK 42
+#define KEYCODE_PLUS 43
+#define KEYCODE_COMMA 44
+#define KEYCODE_MINUS 45
 #define KEYCODE_DOT 46
+#define KEYCODE_SLASH 47
 
 #define KEYCODE_0 48
+#define KEYCODE_1 49
+#define KEYCODE_2 50
+#define KEYCODE_3 51
+#define KEYCODE_4 52
+#define KEYCODE_5 53
+#define KEYCODE_6 54
+#define KEYCODE_7 55
+#define KEYCODE_8 56
 #define KEYCODE_9 57
 #define IS_DIGIT(c) (GT(c, 47) and LT(c, 58))
 
+#define KEYCODE_COLON 58
+#define KEYCODE_SEMICOLON 59
+#define KEYCODE_LT 60
+#define KEYCODE_EQ 61
+#define KEYCODE_GT 62
+#define KEYCODE_QUESTION 63
+#define KEYCODE_AT 64
+
 #define KEYCODE_A 65
-#define KEYCODE_N 78
+#define KEYCODE_B 66
+#define KEYCODE_C 67
+#define KEYCODE_D 68
+#define KEYCODE_E 69
+#define KEYCODE_F 70
+#define KEYCODE_G 71
+#define KEYCODE_H 72
 #define KEYCODE_I 73
+#define KEYCODE_J 74
+#define KEYCODE_K 75
 #define KEYCODE_L 76
+#define KEYCODE_M 77
+#define KEYCODE_N 78
+#define KEYCODE_O 79
+#define KEYCODE_P 80
+#define KEYCODE_Q 81
+#define KEYCODE_R 82
+#define KEYCODE_S 83
+#define KEYCODE_T 84
+#define KEYCODE_U 85
+#define KEYCODE_V 86
+#define KEYCODE_W 87
+#define KEYCODE_X 88
+#define KEYCODE_Y 89
 #define KEYCODE_Z 90
 #define IS_UPPER(c) (GT(c, 64) and LT(c, 91))
 
+#define KEYCODE_LSQB 91
+#define KEYCODE_BACKSLASH 92
+#define KEYCODE_RSQB 93
+#define KEYCODE_CARET 94
+#define KEYCODE_UNDERSCORE 95
+#define KEYCODE_GRAVE 96
+
 #define KEYCODE_a 97
+#define KEYCODE_b 98
+#define KEYCODE_c 99
+#define KEYCODE_d 100
+#define KEYCODE_e 101
+#define KEYCODE_f 102
+#define KEYCODE_g 103
+#define KEYCODE_h 104
+#define KEYCODE_i 105
+#define KEYCODE_j 106
+#define KEYCODE_k 107
+#define KEYCODE_l 108
+#define KEYCODE_m 109
+#define KEYCODE_n 110
+#define KEYCODE_o 111
+#define KEYCODE_p 112
+#define KEYCODE_q 113
+#define KEYCODE_r 114
+#define KEYCODE_s 115
+#define KEYCODE_t 116
+#define KEYCODE_u 117
+#define KEYCODE_v 118
+#define KEYCODE_w 119
+#define KEYCODE_x 120
+#define KEYCODE_y 121
 #define KEYCODE_z 122
 #define IS_LOWER(c) (GT(c, 96) and LT(c, 123))
+
+#define KEYCODE_LCUB 123
+#define KEYCODE_VERBAR 124
+#define KEYCODE_RCUB 125
+#define KEYCODE_TILDE 126
 
 #if JACK
 	#define KEYCODE_NEWLINE 128
@@ -116,11 +202,11 @@
 #else
 	#define KEYCODE_TAB 9
 	#define KEYCODE_LF 10
-	#define KEYCODE_LT 11
+	#define KEYCODE_VT 11
 	#define KEYCODE_FF 12
 	#define KEYCODE_CR 32
 
-	#define IS_WHITESPACE(c) ((c == KEYCODE_SPACE) || (c == KEYCODE_TAB) || (c == KEYCODE_LF) || (c == KEYCODE_LT) || (c == KEYCODE_FF) || (c == KEYCODE_CR))
+	#define IS_WHITESPACE(c) ((c == KEYCODE_SPACE) || (c == KEYCODE_TAB) || (c == KEYCODE_LF) || (c == KEYCODE_VT) || (c == KEYCODE_FF) || (c == KEYCODE_CR))
 #endif
 
 // MARK - Global variables
@@ -184,6 +270,13 @@ static Object pairStackTop;
 	#define parseInteger Main.parseInteger_
 	#define internInteger Main.internInteger_
 	#define internSymbol Main.internSymbol_
+
+	#define evcon Main.evcon_
+	#define evlis Main.evlis_
+	#define lookup Main.lookup_
+	#define pairlis Main.pairlis_
+	#define eval Main.eval_
+	#define apply Main.apply_
 #else
 	#define print_i16 print_i16_
 	void print_i16(i16 x);
@@ -237,6 +330,19 @@ static Object pairStackTop;
 	Object internInteger(i16 x);
 	#define internSymbol internSymbol_
 	Object internSymbol();
+
+	#define evcon evcon_
+	Object evcon(Object, Object);
+	#define evlis evlis_
+	Object evlis(Object, Object);
+	#define lookup lookup_
+	Object lookup(Object, Object);
+	#define pairlis pairlis_
+	Object pairlis(Object, Object, Object);
+	#define eval eval_
+	Object eval(Object, Object);
+	#define apply apply_
+	Object apply(Object, Object, Object);
 #endif
 
 // MARK - Main function
@@ -261,10 +367,59 @@ int main(int argc, char** argv) {
 	let atomStackTop = atomStackBase;
 	let pairStackTop = pairStackBase;
 
-	// Intern "NIL"
-	let curTok_data[0] = KEYCODE_N;
-	let curTok_data[1] = KEYCODE_I;
-	let curTok_data[2] = KEYCODE_L;
+	// Intern builtin symbols
+	#define NIL (atomStackBase + 0)
+	let RAM[atomStackBase + 0] = KEYCODE_N;
+	let RAM[atomStackBase + 1] = KEYCODE_I;
+	let RAM[atomStackBase + 2] = KEYCODE_L;
+	let RAM[atomStackBase + 3] = 0;
+	#define TRUE (atomStackBase + 4)
+	let RAM[atomStackBase + 4] = KEYCODE_T;
+	let RAM[atomStackBase + 5] = KEYCODE_R;
+	let RAM[atomStackBase + 6] = KEYCODE_U;
+	let RAM[atomStackBase + 7] = KEYCODE_E;
+	let RAM[atomStackBase + 8] = 0;
+	#define kQuote (atomStackBase + 9)
+	let RAM[atomStackBase + 9] = KEYCODE_q;
+	let RAM[atomStackBase + 10] = KEYCODE_u;
+	let RAM[atomStackBase + 11] = KEYCODE_o;
+	let RAM[atomStackBase + 12] = KEYCODE_t;
+	let RAM[atomStackBase + 13] = KEYCODE_e;
+	let RAM[atomStackBase + 14] = 0;
+	#define kCond (atomStackBase + 15)
+	let RAM[atomStackBase + 15] = KEYCODE_c;
+	let RAM[atomStackBase + 16] = KEYCODE_o;
+	let RAM[atomStackBase + 17] = KEYCODE_n;
+	let RAM[atomStackBase + 18] = KEYCODE_d;
+	let RAM[atomStackBase + 19] = 0;
+	#define kEq (atomStackBase + 20)
+	let RAM[atomStackBase + 20] = KEYCODE_EQ;
+	let RAM[atomStackBase + 21] = 0;
+	#define kCons (atomStackBase + 22)
+	let RAM[atomStackBase + 22] = KEYCODE_c;
+	let RAM[atomStackBase + 23] = KEYCODE_o;
+	let RAM[atomStackBase + 24] = KEYCODE_n;
+	let RAM[atomStackBase + 25] = KEYCODE_s;
+	let RAM[atomStackBase + 26] = 0;
+	#define kAtom (atomStackBase + 27)
+	let RAM[atomStackBase + 27] = KEYCODE_a;
+	let RAM[atomStackBase + 28] = KEYCODE_t;
+	let RAM[atomStackBase + 29] = KEYCODE_o;
+	let RAM[atomStackBase + 30] = KEYCODE_m;
+	let RAM[atomStackBase + 31] = 0;
+	#define kHead (atomStackBase + 32)
+	let RAM[atomStackBase + 32] = KEYCODE_h;
+	let RAM[atomStackBase + 33] = KEYCODE_e;
+	let RAM[atomStackBase + 34] = KEYCODE_a;
+	let RAM[atomStackBase + 35] = KEYCODE_d;
+	let RAM[atomStackBase + 36] = 0;
+	#define kTail (atomStackBase + 37)
+	let RAM[atomStackBase + 37] = KEYCODE_t;
+	let RAM[atomStackBase + 38] = KEYCODE_a;
+	let RAM[atomStackBase + 39] = KEYCODE_i;
+	let RAM[atomStackBase + 40] = KEYCODE_l;
+	let RAM[atomStackBase + 41] = 0;
+	
 
 	let curTok_length = 3;
 
@@ -491,7 +646,7 @@ function void processLine_() {
 	// 	do print_literal("Integer ");
 	// 	do print_i16(object);
 	// 	do print_literal(" value '");
-	// 	do print_i16(RAM[object + 1]);
+	// 	do print_i16(GET_INTEGER_VALUE(object));
 	// 	do print_literal("'");
 	// } else {
 	// 	do print_literal("Symbol ");
@@ -509,7 +664,7 @@ function void processLine_() {
 function void printObject_(Object o) {
 	if(IS_ATOM(o)) {
 		if(IS_INTEGER(o)) {
-			do print_i16(RAM[o + 1]);
+			do print_i16(GET_INTEGER_VALUE(o));
 		} else {
 			do print_i16_ptr_as_string(o);
 		}
@@ -825,6 +980,103 @@ function BOOL nextToken_() {
 	}
 
 	return YES;
+}
+
+// TODO document this and make it work in Jack
+function Object evcon_(Object c, Object a) {
+  if (eval(head(head(c)), a)) {
+    return eval(head(tail(head(c))), a);
+  } else {
+    return evcon(tail(c), a);
+  }
+}
+
+// TODO document this and make it work in Jack
+function Object evlis_(Object m, Object a) {
+  return m ? cons(eval(head(m), a),
+                  evlis(tail(m), a)) : m;
+}
+
+// Searches an alist for a given key.
+// Returns the value for said key.
+function Object lookup_(Object key, Object alist) {
+	// If the first key-value pair in alist matches,
+	// then return the value.
+  if (EQ(key, head(head(alist)))) {
+		return tail(head(alist));
+	}
+	// Otherwise, search the tail of the list.
+  return lookup(key, tail(alist));
+}
+
+// "Zips" two lists (x and y) together, and appends a.
+// 
+// Example:
+//   pairlis[(A B C); (U V W); ((D . X) (E . Y))] =
+//     ((A . U) (B . V) (C . W) (D . X) (E . Y))
+// 
+// From LISP 1.5 manual:
+//   This function gives the list of pairs of corresponding elements of
+//   the lists x and y, and appends this to the list a.
+function Object pairlis_(Object x, Object y, Object a) {
+	// In LISP 1.5:
+	//   pairlis [x; y; a] = [
+	//     null[x] -> a; 
+	//     T -> cons[cons[car[x]; car[y]];
+  //               pairlis[cdr[x]; cdr [y]; a]]
+	//   ]
+
+	// If x is nil, just return the thing to append to.
+  if(IS_NIL(x)) {
+		return a;
+	} else {
+		// Zip the first two terms, then
+		// hand the tails of both lists back to pairlis.
+		return cons(cons(head(x), head(y)),
+		            pairlis(tail(x), tail(y), a));
+	}
+}
+
+// Evaluates the expression e in the environment env.
+// env is an alist (association list) -- a list of (key . value) pairs
+function Object eval_(Object e, Object env) {
+  if (IS_NIL(e)) return e;
+	if (IS_INTEGER(e)) return GET_INTEGER_VALUE(e);
+  if (IS_ATOM(e)) return lookup(e, env);
+
+	// If e is a list (quote ___), return ___.
+	// We use head(tail(e)) because it's actually (quote . (___ . NIL))
+  if (EQ(head(e), kQuote)) return head(tail(e));
+
+	// If e is a conditional, punt to evcon to evaluate it.
+  if (EQ(head(e), kCond)) return evcon(tail(e), env);
+
+	// If the above fails,
+	//   head(e) is the first item (so the function name)
+	//   use evlis to evaluate the rest of the items
+	//   call apply to apply the function against the values
+  return apply(head(e), evlis(tail(e), env), env);
+}
+
+// Applies the function f to the argument x, in the environment env.
+function Object apply_(Object f, Object x, Object env) {
+	// If f is not a builtin,
+	//   assume f is a lambda-expression of form
+	//     (lambda ARGS RETVAL)
+	//   then run:
+	//     eval[RETVAL; pairlis[ARGS; x; a]]
+	//   i.e. we use pairlis to 
+	// 
+	// We ignore checking if the first thing is the keyword "lambda"
+	// in order to save on code size and runtime.
+  if (IS_PAIR(f)) return eval(head(tail(tail(f))), pairlis(head(tail(f)), x, env));
+  // TODO the below
+	if (f == kEq)   return head(x) == head(tail(x));
+  if (f == kCons) return cons(head(x), head(tail(x)));
+  if (f == kAtom) return head(x) >= 0;
+  if (f == kHead) return head(head(x));
+  if (f == kTail) return tail(head(x));
+  return apply(lookup(f, env), x, env);
 }
 
 

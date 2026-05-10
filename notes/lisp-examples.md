@@ -77,3 +77,10 @@
 * [https://bernsteinbear.com/blog/lisp/](https://bernsteinbear.com/blog/lisp/)  
   * Ghuloum, but in C
 
+# About different LISPs
+
+## Scheme
+
+* [A Scheme Primer](https://files.spritely.institute/papers/scheme-primer.html)
+
+
