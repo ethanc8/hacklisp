@@ -466,6 +466,38 @@ int main(int argc, char** argv) {
 	// User interface
 	do println_literal("HackLISP-0");
 
+	#if !JACK
+		if(argc > 1) {
+			// Following was written by Claude.
+			FILE* f = fopen(argv[1], "rb");
+			if (!f) return NULL;
+
+			// Seek to end to get file size
+			fseek(f, 0, SEEK_END);
+			long size = ftell(f);
+			rewind(f);  // or fseek(f, 0, SEEK_SET)
+
+			// Allocate buffer (+1 for optional null terminator)
+			char *buf = malloc(size + 1);
+			if (!buf) {
+					fclose(f);
+					return NULL;
+			}
+
+			// Read the entire file in one shot
+			long bytes_read = fread(buf, 1, size, f);
+			fclose(f);
+
+			if (bytes_read != size) {
+					free(buf);
+					return NULL;
+			}
+
+			buf[size] = '\0';  // Null-terminate (safe for text files)
+			let line = buf;
+		}
+	#endif
+
 	while(YES) {
 		#if JACK
 			do Output.printString("> ");
@@ -1155,28 +1187,17 @@ function Object apply_(Object f, Object x, Object env) {
 	// do newline();
 
 	// If the first element is a list...
+	// We assume f is a lambda-expression of form
+	//   (lambda ARGS RETVAL)
+	// then run: (LISP 1.5)
+	//   eval[RETVAL; pairlis[ARGS; x; env]]
+	// i.e. we use pairlis to bind the args in the environment,
+	// then evaluate it.
+	//
+	// We skip checking that it starts with `lambda` to reduce the code size
+	// and the runtime.
   if(IS_PAIR(f)) {
-		if(EQ(head(f), kLambda)) {
-			// f is a lambda-expression of form
-			//   (lambda ARGS RETVAL)
-			// then run: (LISP 1.5)
-			//   eval[RETVAL; pairlis[ARGS; x; env]]
-			// i.e. we use pairlis to bind the args in the environment,
-			// then evaluate it.
-			return eval(head(tail(tail(f))), pairlis(head(tail(f)), x, env));
-		}
-
-		// We don't need label because we're going to implement let*
-
-		// if(EQ(head(f), kLabel)) {
-		// 	// f is a label-expression of form
-		// 	//   (label NAME VALUE)
-		// 	// then run: (LISP 1.5)
-		// 	//   apply[caddr[f]; x; cons[cons[cadr[fn]; caddr[fn]]; env]]]
-		// 	//   apply[VALUE; x; cons[cons[NAME; VALUE]; env]]]
-		// 	// Note that this means VALUE must be a procedure (lambda or builtin).
-		// 	return apply(head(tail(tail(f))), x, cons(cons(head(tail(f)), head(tail(tail(f)))), env));
-		// }
+		return eval(head(tail(tail(f))), pairlis(head(tail(f)), x, env));
 	}
 
 	// Otherwise it's probably a builtin.
