@@ -506,8 +506,7 @@ int main(int argc, char** argv) {
 			line[size] = '\0';  // Null-terminate (safe for text files)
 
 			do nextToken();
-			do printObject(eval(parseObject(), builtins));
-			do newline();
+			do eval(parseObject(), builtins);
 		} else
 	#endif
 	if(YES) {
@@ -726,13 +725,6 @@ function void printObject_(Object o) {
 			do print_i16_ptr_as_string(o);
 		}
 	} else {
-		if(IS_ATOM(tail(tail(o)))) {
-			do print_literal("(");
-			do printObject(head(o));
-			do print_literal(" ");
-			do printObject(head(tail(o)));
-			do print_literal(")");
-		}
 		do print_literal("(");
 		do printObject(head(o));
 		do printTail(tail(o));
@@ -1249,7 +1241,11 @@ function Object apply_(Object f, Object x, Object env) {
 		return read();
 	}
 	if(EQ(f, kPrint)) {
-		do printObject(head(x));
+		if(IS_NIL(x)) {
+			do newline();
+		} else {
+			do printObject(head(x));
+		}
 		return x;
 	}
 	
