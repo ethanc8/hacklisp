@@ -511,8 +511,11 @@ int main(int argc, char** argv) {
 	#endif
 	if(YES) {
 		do print_literal("HackLISP-0");
+		do newline();
 		while(YES) {
+			do print_literal("> ");
 			do printObject(eval(read(), builtins));
+			do newline();
 		}
 	}
 	#if JACK
@@ -694,9 +697,7 @@ function void newline_() {
 
 // Reads a line, and returns it after parsing.
 function Object read_() {
-	do newline();
 	#if JACK
-		do Output.printString("> ");
 		let i = 0;
 
 		let c = Keyboard.readChar();
@@ -709,7 +710,7 @@ function Object read_() {
 		let line[i] = 0;
 		do Output.println();
 	#else
-		let line = readline("> ");
+		let line = readline("");
 	#endif
 
 	let curTok_idx = 0;
