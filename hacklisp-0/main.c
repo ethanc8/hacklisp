@@ -414,21 +414,37 @@ int main(int argc, char** argv) {
 	let RAM[atomStackBase + 28] = KEYCODE_t;
 	let RAM[atomStackBase + 29] = KEYCODE_o;
 	let RAM[atomStackBase + 30] = KEYCODE_m;
-	let RAM[atomStackBase + 31] = 0;
-	#define kHead (atomStackBase + 32)
-	let RAM[atomStackBase + 32] = KEYCODE_h;
-	let RAM[atomStackBase + 33] = KEYCODE_e;
-	let RAM[atomStackBase + 34] = KEYCODE_a;
-	let RAM[atomStackBase + 35] = KEYCODE_d;
-	let RAM[atomStackBase + 36] = 0;
-	#define kTail (atomStackBase + 37)
-	let RAM[atomStackBase + 37] = KEYCODE_t;
-	let RAM[atomStackBase + 38] = KEYCODE_a;
-	let RAM[atomStackBase + 39] = KEYCODE_i;
-	let RAM[atomStackBase + 40] = KEYCODE_l;
-	let RAM[atomStackBase + 41] = 0;
+	let RAM[atomStackBase + 31] = KEYCODE_QUESTION;
+	let RAM[atomStackBase + 32] = 0;
+	#define kHead (atomStackBase + 33)
+	let RAM[atomStackBase + 33] = KEYCODE_h;
+	let RAM[atomStackBase + 34] = KEYCODE_e;
+	let RAM[atomStackBase + 35] = KEYCODE_a;
+	let RAM[atomStackBase + 36] = KEYCODE_d;
+	let RAM[atomStackBase + 37] = 0;
+	#define kTail (atomStackBase + 38)
+	let RAM[atomStackBase + 38] = KEYCODE_t;
+	let RAM[atomStackBase + 39] = KEYCODE_a;
+	let RAM[atomStackBase + 40] = KEYCODE_i;
+	let RAM[atomStackBase + 41] = KEYCODE_l;
+	let RAM[atomStackBase + 42] = 0;
+	#define kLambda (atomStackBase + 43)
+	let RAM[atomStackBase + 43] = KEYCODE_l;
+	let RAM[atomStackBase + 44] = KEYCODE_a;
+	let RAM[atomStackBase + 45] = KEYCODE_m;
+	let RAM[atomStackBase + 46] = KEYCODE_b;
+	let RAM[atomStackBase + 47] = KEYCODE_d;
+	let RAM[atomStackBase + 48] = KEYCODE_a;
+	let RAM[atomStackBase + 49] = 0;
+	#define kLabel (atomStackBase + 50)
+	let RAM[atomStackBase + 50] = KEYCODE_l;
+	let RAM[atomStackBase + 51] = KEYCODE_a;
+	let RAM[atomStackBase + 52] = KEYCODE_b;
+	let RAM[atomStackBase + 53] = KEYCODE_e;
+	let RAM[atomStackBase + 54] = KEYCODE_l;
+	let RAM[atomStackBase + 55] = 0;
 
-	let atomStackTop = atomStackBase + 42;
+	let atomStackTop = atomStackBase + 50;
 
 	// (
 	//   (NIL . NIL)
@@ -1138,43 +1154,53 @@ function Object apply_(Object f, Object x, Object env) {
 	// do printObject(env);
 	// do newline();
 
+	// If the first element is a list...
+  if(IS_PAIR(f)) {
+		if(EQ(head(f), kLambda)) {
+			// f is a lambda-expression of form
+			//   (lambda ARGS RETVAL)
+			// then run: (LISP 1.5)
+			//   eval[RETVAL; pairlis[ARGS; x; env]]
+			// i.e. we use pairlis to bind the args in the environment,
+			// then evaluate it.
+			return eval(head(tail(tail(f))), pairlis(head(tail(f)), x, env));
+		}
 
-	// If f is not a builtin,
-	//   assume f is a lambda-expression of form
-	//     (lambda ARGS RETVAL)
-	//   then run:
-	//     eval[RETVAL; pairlis[ARGS; x; a]]
-	//   i.e. we use pairlis to bind the args in the environment,
-	//   then evaluate it.
-	// 
-	// We ignore checking if the first thing is the keyword "lambda"
-	// in order to save on code size and runtime.
-  if (IS_PAIR(f)) {
-		return eval(head(tail(tail(f))), pairlis(head(tail(f)), x, env));
+		// We don't need label because we're going to implement let*
+
+		// if(EQ(head(f), kLabel)) {
+		// 	// f is a label-expression of form
+		// 	//   (label NAME VALUE)
+		// 	// then run: (LISP 1.5)
+		// 	//   apply[caddr[f]; x; cons[cons[cadr[fn]; caddr[fn]]; env]]]
+		// 	//   apply[VALUE; x; cons[cons[NAME; VALUE]; env]]]
+		// 	// Note that this means VALUE must be a procedure (lambda or builtin).
+		// 	return apply(head(tail(tail(f))), x, cons(cons(head(tail(f)), head(tail(tail(f)))), env));
+		// }
 	}
 
 	// Otherwise it's probably a builtin.
-	if (EQ(f, kEq)) {
+	if(EQ(f, kEq)) {
 		if(EQ(head(x), head(tail(x)))) {
 			return TRUE;
 		} else {
 			return NIL;
 		}
 	}
-  if (EQ(f, kCons)) {
+  if(EQ(f, kCons)) {
 		return cons(head(x), head(tail(x)));
 	}
-  if (EQ(f, kAtom)) {
+  if(EQ(f, kAtom)) {
 		if(IS_ATOM(head(x))) {
 			return TRUE;
 		} else {
 			return NIL;
 		}
 	}
-  if (EQ(f, kHead)) {
+  if(EQ(f, kHead)) {
 		return head(head(x));
 	}
-  if (EQ(f, kTail)) {
+  if(EQ(f, kTail)) {
 		return tail(head(x));
 	}
 

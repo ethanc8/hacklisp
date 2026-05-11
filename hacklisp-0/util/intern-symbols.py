@@ -6,9 +6,11 @@ symbols = [
 	("cond", "kCond"),
 	("=", "kEq"),
 	("cons", "kCons"),
-	("atom", "kAtom"),
+	("atom?", "kAtom"),
 	("head", "kHead"),
 	("tail", "kTail"),
+	("lambda", "kLambda"),
+	("label", "kLabel"),
 ]
 
 offset = 0
