@@ -12,6 +12,7 @@ symbols = [
 	("lambda", "kLambda"),
 	("read", "kRead"),
 	("print", "kPrint"),
+	("integer?", "kInteger"),
 ]
 
 offset = 0

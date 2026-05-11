@@ -454,8 +454,18 @@ int main(int argc, char** argv) {
 	let RAM[atomStackBase + 58] = KEYCODE_n;
 	let RAM[atomStackBase + 59] = KEYCODE_t;
 	let RAM[atomStackBase + 60] = 0;
+	#define kInteger (atomStackBase + 61)
+	let RAM[atomStackBase + 61] = KEYCODE_i;
+	let RAM[atomStackBase + 62] = KEYCODE_n;
+	let RAM[atomStackBase + 63] = KEYCODE_t;
+	let RAM[atomStackBase + 64] = KEYCODE_e;
+	let RAM[atomStackBase + 65] = KEYCODE_g;
+	let RAM[atomStackBase + 66] = KEYCODE_e;
+	let RAM[atomStackBase + 67] = KEYCODE_r;
+	let RAM[atomStackBase + 68] = KEYCODE_QUESTION;
+	let RAM[atomStackBase + 69] = 0;
 
-	let atomStackTop = atomStackBase + 61;
+	let atomStackTop = atomStackBase + 70;
 
 	// (
 	//   (NIL . NIL)
@@ -1144,11 +1154,19 @@ function Object evlis_(Object exprs, Object env) {
 //
 // Called "assoc" in some implementations.
 function Object lookup_(Object key, Object alist) {
+	if(EQ(alist, NIL)) {
+		print_literal("Attempted to lookup `");
+		printObject(key);
+		print_literal("`");
+		newline();
+		throw_error("Lookup failed.");
+	}
 	// If the first key-value pair in alist matches,
 	// then return the value.
-  if (EQ(key, head(head(alist)))) {
+  if(EQ(key, head(head(alist)))) {
 		return tail(head(alist));
 	}
+
 	// Otherwise, search the tail of the list.
   return lookup(key, tail(alist));
 }
@@ -1184,6 +1202,13 @@ function Object pairlis_(Object x, Object y, Object a) {
 // Evaluates the expression e in the environment env.
 // env is an alist (association list) -- a list of (key . value) pairs
 function Object eval_(Object e, Object env) {
+	// print_literal("dbg: (eval e:");
+	// printObject(e);
+	// print_literal(" env:");
+	// printObject(env);
+	// print_literal(")");
+	// newline();
+
   if (IS_NIL(e)) { return e; }
 	if (IS_INTEGER(e)) { return e; }
   if (IS_ATOM(e)) { return lookup(e, env); }
@@ -1204,13 +1229,15 @@ function Object eval_(Object e, Object env) {
 
 // Applies the function f to the argument x, in the environment env.
 function Object apply_(Object f, Object x, Object env) {
-	// do print_literal("Running (apply f:");
-	// do printObject(f);
-	// do print_literal(" x:");
-	// do printObject(x);
-	// do print_literal(" env:");
-	// do printObject(env);
-	// do newline();
+	// print_literal("dbg: (apply f:");
+	// printObject(f);
+	// print_literal(" x:");
+	// printObject(x);
+	// print_literal(" env:");
+	// printObject(env);
+	// print_literal(")");
+	// newline();
+
 
 	// If the first element is a list...
 	// We assume f is a lambda-expression of form
@@ -1236,6 +1263,13 @@ function Object apply_(Object f, Object x, Object env) {
 	}
   if(EQ(f, kCons)) {
 		return cons(head(x), head(tail(x)));
+	}
+	if(EQ(f, kInteger)) {
+		if(IS_INTEGER(head(x))) {
+			return TRUE;
+		} else {
+			return NIL;
+		}
 	}
   if(EQ(f, kAtom)) {
 		if(IS_ATOM(head(x))) {
