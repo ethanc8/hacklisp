@@ -200,14 +200,16 @@
 	#define KEYCODE_NEWLINE 128
 
 	#define IS_WHITESPACE(c) ((c = KEYCODE_SPACE) | (c = KEYCODE_NEWLINE))
+	#define IS_NEWLINE(c) (c = KEYCODE_NEWLINE)
 #else
 	#define KEYCODE_TAB 9
 	#define KEYCODE_LF 10
 	#define KEYCODE_VT 11
 	#define KEYCODE_FF 12
-	#define KEYCODE_CR 32
+	#define KEYCODE_CR 13
 
 	#define IS_WHITESPACE(c) ((c == KEYCODE_SPACE) || (c == KEYCODE_TAB) || (c == KEYCODE_LF) || (c == KEYCODE_VT) || (c == KEYCODE_FF) || (c == KEYCODE_CR))
+	#define IS_NEWLINE(c) ((c == KEYCODE_LF) || (c == KEYCODE_CR))
 #endif
 
 // MARK - Global variables
@@ -1017,6 +1019,16 @@ function BOOL nextToken_() {
 	// Check if end of string
 	if(EQ(c, 0)) {
 		return NO;
+	}
+
+	// Eat comments
+	if(EQ(c, KEYCODE_SEMICOLON)) {
+		while(not (IS_NEWLINE(c) or EQ(c, 0))) {
+			let curTok_idx = curTok_idx + 1;
+
+			let c = line[curTok_idx];
+		}
+		return nextToken();
 	}
 
 	let curTok_data = line + curTok_idx;
