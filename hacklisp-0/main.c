@@ -1154,27 +1154,27 @@ function Object apply_(Object f, Object x, Object env) {
 	}
 
 	// Otherwise it's probably a builtin.
-	if (f == kEq) {
+	if (EQ(f, kEq)) {
 		if(EQ(head(x), head(tail(x)))) {
 			return TRUE;
 		} else {
 			return NIL;
 		}
 	}
-  if (f == kCons) {
+  if (EQ(f, kCons)) {
 		return cons(head(x), head(tail(x)));
 	}
-  if (f == kAtom) {
+  if (EQ(f, kAtom)) {
 		if(IS_ATOM(head(x))) {
 			return TRUE;
 		} else {
 			return NIL;
 		}
 	}
-  if (f == kHead) {
+  if (EQ(f, kHead)) {
 		return head(head(x));
 	}
-  if (f == kTail) {
+  if (EQ(f, kTail)) {
 		return tail(head(x));
 	}
 
