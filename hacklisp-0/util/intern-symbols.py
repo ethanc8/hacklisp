@@ -10,7 +10,8 @@ symbols = [
 	("head", "kHead"),
 	("tail", "kTail"),
 	("lambda", "kLambda"),
-	("label", "kLabel"),
+	("read", "kRead"),
+	("print", "kPrint"),
 ]
 
 offset = 0

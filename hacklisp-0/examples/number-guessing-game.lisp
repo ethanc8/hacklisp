@@ -1,84 +1,84 @@
-((LAMBDA (
+((lambda (
            MAIN GAMELOOP HELPMESSAGE - <= AND CMP PROGN ;;
          )
-   ((LAMBDA () (QUOTE (THE GAME HAS FINISHED.)))
+   ((lambda () (quote (THE GAME HAS FINISHED.)))
     (MAIN)))
- (QUOTE
-   (LAMBDA ()
+ (quote
+   (lambda ()
      (PROGN
-       ;; (QUOTE - PROGN IS IMPLEMENTED BY PASSING EXPRESSIONS AS ARGUMENTS
-       ;;          TO AN EMPTY LAMBDA, WHICH ARE EVALUATED SEQUENTIALLY.
+       ;; (quote - PROGN IS IMPLEMENTED BY PASSING EXPRESSIONS AS ARGUMENTS
+       ;;          TO AN EMPTY lambda, WHICH ARE EVALUATED SEQUENTIALLY.
        ;;        - NOTE THAT PROGN ALWAYS RETURNS NIL, NOT ITS FINAL VALUE.
        ;;          TO EXTRACT THE EVALUATION RESULTS WITHIN A SEQUENCE,
-       ;;          CONS CAN BE USED INSTEAD OF PROGN.
+       ;;          cons CAN BE USED INSTEAD OF PROGN.
        ;;        - SINCE ALL VALUES ARE DISCARDED INSIDE PROGN,
        ;;          COMMENTS CAN BE WRITTEN IN THIS MANNER.
        ;;        - NOTE THAT `;;` IS A VALID VARIABLE BOUND TO NIL.)
-       (PRINT (QUOTE (LET'S PLAY A NUMBER GUESSING GAME.
-                      I'M THINKING OF A CERTAIN NUMBER BETWEEN 1 AND 10.
+       (print (quote (LET'S PLAY A NUMBER GUESSING GAME.
+                      I'M THINKING OF A CERTAIN NUMBER BETWEEN 1 AND _10.
                       SAY A NUMBER, AND I'LL TELL YOU IF IT'S
                       LESS THAN, GREATER THAN, OR EQUAL TO MY NUMBER.
                       CAN YOU GUESS WHICH NUMBER I'M THINKING OF?)))
-       ;; (QUOTE - CALLING PRINT WITHOUT ARGUMENTS PRINTS A NEWLINE)
-       (PRINT)
+       ;; (quote - CALLING print WITHOUT ARGUMENTS printS A NEWLINE)
+       (print)
        (HELPMESSAGE)
        (GAMELOOP ())
-       (PRINT)
-       (PRINT (QUOTE (DO YOU WISH TO PLAY AGAIN? Y/N:)))
-       (PRINT)
-       (PRINT (QUOTE >))
-       (COND ((EQ (READ) (QUOTE Y))
-              (PROGN (PRINT (QUOTE (ALRIGHT!)))
-                     ;; (QUOTE - INFINITE LOOPS ARE DONE USING RECURSION)
+       (print)
+       (print (quote (DO YOU WISH TO PLAY AGAIN? Y/N:)))
+       (print)
+       (print (quote >))
+       (cond ((= (read) (quote Y))
+              (PROGN (print (quote (ALRIGHT!)))
+                     ;; (quote - INFINITE LOOPS ARE DONE USING RECURSION)
                      (MAIN)))
-             ((QUOTE T)
-              (PROGN (PRINT (QUOTE (THANK YOU FOR PLAYING!)))
-                     (PRINT)))))))
- (QUOTE
-   (LAMBDA (NUMTRIES)
+             (TRUE
+              (PROGN (print (quote (THANK YOU FOR PLAYING!)))
+                     (print)))))))
+ (quote
+   (lambda (NUMTRIES)
      (PROGN
-       (PRINT)
-       (PRINT (QUOTE NUMBER>))
-       ((LAMBDA (GUESS ANSWER NUMTRIES)
-          (COND ((ATOM GUESS)
+       (print)
+       (print (quote NUMBER>))
+       ((lambda (GUESS ANSWER NUMTRIES)
+          (cond ((atom? GUESS)
                  (PROGN
-                   ;; (QUOTE - WHEN THE USER INPUTS AN ATOM, SHOW USAGE TEXT.
+                   ;; (quote - WHEN THE USER INPUTS AN atom?, SHOW USAGE TEXT.
                    ;;          NUMTRIES DO NOT INCREASE IN THIS CASE.)
                    (HELPMESSAGE)
-                   (GAMELOOP (CDR NUMTRIES))))
-                ((EQ (QUOTE <) (CMP GUESS ANSWER))
+                   (GAMELOOP (tail NUMTRIES))))
+                ((= (quote <) (CMP GUESS ANSWER))
                  (PROGN
-                   (PRINT (QUOTE (YOUR GUESS IS LESS THAN MY NUMBER.)))
+                   (print (quote (YOUR GUESS IS LESS THAN MY NUMBER.)))
                    (GAMELOOP NUMTRIES)))
-                ((EQ (QUOTE >) (CMP GUESS ANSWER))
+                ((= (quote >) (CMP GUESS ANSWER))
                  (PROGN
-                   (PRINT (QUOTE (YOUR GUESS IS GREATER THAN MY NUMBER.)))
+                   (print (quote (YOUR GUESS IS GREATER THAN MY NUMBER.)))
                    (GAMELOOP NUMTRIES)))
-                ((QUOTE T)
+                (TRUE
                  (PROGN
-                   (PRINT (QUOTE (THAT'S RIGHT! MY NUMBER IS:)))
-                   (PRINT ANSWER)
-                   (PRINT)
-                   (PRINT (QUOTE (YOU GUESSED CORRECTLY! CONGRATULATIONS!)))
-                   (PRINT)
-                   (PRINT (QUOTE (NUMBER OF TRIES:)))
-                   (PRINT NUMTRIES)
-                   (PRINT)))))
-        (READ)
-        (QUOTE (* * * * * * *))
-        (CONS (QUOTE *) NUMTRIES)))))
- (QUOTE (LAMBDA ()
-          (PRINT (QUOTE (PLEASE INPUT YOUR NUMBER IN UNARY.
+                   (print (quote (THAT'S RIGHT! MY NUMBER IS:)))
+                   (print ANSWER)
+                   (print)
+                   (print (quote (YOU GUESSED CORRECTLY! CONGRATULATIONS!)))
+                   (print)
+                   (print (quote (NUMBER OF TRIES:)))
+                   (print NUMTRIES)
+                   (print)))))
+        (read)
+        (quote (* * * * * * *))
+        (cons (quote *) NUMTRIES)))))
+ (quote (lambda ()
+          (print (quote (PLEASE INPUT YOUR NUMBER IN UNARY.
                          FOR EXAMPLE, 1 IS (*), 3 IS (* * *), ETC.)))))
- (QUOTE (LAMBDA (N M)
-          (COND ((EQ N NIL) NIL)
-                ((EQ M NIL) N)
-                ((QUOTE T) (- (CDR N) (CDR M))))))
- (QUOTE (LAMBDA (N M) (EQ NIL (- N M))))
- (QUOTE (LAMBDA (X Y) (COND (X Y) ((QUOTE T) NIL))))
- (QUOTE (LAMBDA (N M)
-          (COND ((AND (<= N M) (<= M N)) (QUOTE ==))
-                ((<= N M) (QUOTE <))
-                ((<= M N) (QUOTE >)))))
- (QUOTE (LAMBDA () NIL))
+ (quote (lambda (N M)
+          (cond ((= N NIL) NIL)
+                ((= M NIL) N)
+                (TRUE (- (tail N) (tail M))))))
+ (quote (lambda (N M) (= NIL (- N M))))
+ (quote (lambda (X Y) (cond (X Y) (TRUE NIL))))
+ (quote (lambda (N M)
+          (cond ((AND (<= N M) (<= M N)) (quote ==))
+                ((<= N M) (quote <))
+                ((<= M N) (quote >)))))
+ (quote (lambda () NIL))
  NIL)

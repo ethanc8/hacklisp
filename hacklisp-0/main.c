@@ -260,10 +260,11 @@ static Object builtins;
 
 	#define newline Main.newline_
 
-	#define processLine Main.processLine_
+	#define read Main.read_
 	#define nextToken Main.nextToken_
 
 	#define printObject Main.printObject_
+	#define printTail Main.printTail_
 	#define debugObject Main.debugObject_
 
 	#define parseObject Main.parseObject_
@@ -311,11 +312,13 @@ static Object builtins;
 
 	#define nextToken nextToken_
 	BOOL nextToken();
-	#define processLine processLine_
-	void processLine();
+	#define read read_
+	Object read();
 
 	#define printObject printObject_
 	void printObject(Object o);
+	#define printTail printTail_
+	void printTail(Object o);
 	#define debugObject debugObject_
 	void debugObject(Object o);
 
@@ -436,15 +439,21 @@ int main(int argc, char** argv) {
 	let RAM[atomStackBase + 47] = KEYCODE_d;
 	let RAM[atomStackBase + 48] = KEYCODE_a;
 	let RAM[atomStackBase + 49] = 0;
-	#define kLabel (atomStackBase + 50)
-	let RAM[atomStackBase + 50] = KEYCODE_l;
-	let RAM[atomStackBase + 51] = KEYCODE_a;
-	let RAM[atomStackBase + 52] = KEYCODE_b;
-	let RAM[atomStackBase + 53] = KEYCODE_e;
-	let RAM[atomStackBase + 54] = KEYCODE_l;
-	let RAM[atomStackBase + 55] = 0;
+	#define kRead (atomStackBase + 50)
+	let RAM[atomStackBase + 50] = KEYCODE_r;
+	let RAM[atomStackBase + 51] = KEYCODE_e;
+	let RAM[atomStackBase + 52] = KEYCODE_a;
+	let RAM[atomStackBase + 53] = KEYCODE_d;
+	let RAM[atomStackBase + 54] = 0;
+	#define kPrint (atomStackBase + 55)
+	let RAM[atomStackBase + 55] = KEYCODE_p;
+	let RAM[atomStackBase + 56] = KEYCODE_r;
+	let RAM[atomStackBase + 57] = KEYCODE_i;
+	let RAM[atomStackBase + 58] = KEYCODE_n;
+	let RAM[atomStackBase + 59] = KEYCODE_t;
+	let RAM[atomStackBase + 60] = 0;
 
-	let atomStackTop = atomStackBase + 50;
+	let atomStackTop = atomStackBase + 61;
 
 	// (
 	//   (NIL . NIL)
@@ -464,13 +473,14 @@ int main(int argc, char** argv) {
 	do internSymbol();
 
 	// User interface
-	do println_literal("HackLISP-0");
 
 	#if !JACK
 		if(argc > 1) {
 			// Following was written by Claude.
 			FILE* f = fopen(argv[1], "rb");
-			if (!f) return NULL;
+			if (!f) {
+				throw_error("Could not open file!");
+			}
 
 			// Seek to end to get file size
 			fseek(f, 0, SEEK_END);
@@ -478,45 +488,33 @@ int main(int argc, char** argv) {
 			rewind(f);  // or fseek(f, 0, SEEK_SET)
 
 			// Allocate buffer (+1 for optional null terminator)
-			char *buf = malloc(size + 1);
-			if (!buf) {
+			let line = malloc(size + 1);
+			if (!line) {
 					fclose(f);
-					return NULL;
+					throw_error("Could not alloc enough memory to store the file");
 			}
 
 			// Read the entire file in one shot
-			long bytes_read = fread(buf, 1, size, f);
+			long bytes_read = fread(line, 1, size, f);
 			fclose(f);
 
 			if (bytes_read != size) {
-					free(buf);
-					return NULL;
+					free(line);
+					throw_error("Number of bytes read from the file != size of the file");
 			}
 
-			buf[size] = '\0';  // Null-terminate (safe for text files)
-			let line = buf;
-		}
+			line[size] = '\0';  // Null-terminate (safe for text files)
+
+			do nextToken();
+			do printObject(eval(parseObject(), builtins));
+			do newline();
+		} else
 	#endif
-
-	while(YES) {
-		#if JACK
-			do Output.printString("> ");
-			let i = 0;
-
-			let c = Keyboard.readChar();
-			while(NEQ(c, KEYCODE_NEWLINE) and LEQ(i, 62)) {
-				let line[i] = c;
-
-				let i = i + 1;
-				let c = Keyboard.readChar();
-			}
-			let line[i] = 0;
-			do Output.println();
-		#else
-			let line = readline("> ");
-		#endif
-
-		do processLine();
+	if(YES) {
+		do print_literal("HackLISP-0");
+		while(YES) {
+			do printObject(eval(read(), builtins));
+		}
 	}
 	#if JACK
 		return;
@@ -695,28 +693,29 @@ function void newline_() {
 	return;
 }
 
-// Processes the line stored in the global variable `line`.
-function void processLine_() {
-	var Object expr;
-	var Object env;
+// Reads a line, and returns it after parsing.
+function Object read_() {
+	do newline();
+	#if JACK
+		do Output.printString("> ");
+		let i = 0;
+
+		let c = Keyboard.readChar();
+		while(NEQ(c, KEYCODE_NEWLINE) and LEQ(i, 62)) {
+			let line[i] = c;
+
+			let i = i + 1;
+			let c = Keyboard.readChar();
+		}
+		let line[i] = 0;
+		do Output.println();
+	#else
+		let line = readline("> ");
+	#endif
 
 	let curTok_idx = 0;
-	// // Debugging the tokenizer
-	// while(nextToken()) {
-	// 	do print_STRING_length(curTok_data, curTok_length);
-	// 	do print_char(KEYCODE_SPACE);
-	// 	// printf("type %"PRIi16" value `%.*s`\n", curTok_type, curTok_length, curTok_data);
-	// }
-
 	do nextToken();
-	let expr = parseObject();
-
-	do printObject(eval(expr, builtins));
-	// do printObject(expr);
-
-	do newline();
-
-	return;
+	return parseObject();
 }
 
 function void printObject_(Object o) {
@@ -727,14 +726,36 @@ function void printObject_(Object o) {
 			do print_i16_ptr_as_string(o);
 		}
 	} else {
+		if(IS_ATOM(tail(tail(o)))) {
+			do print_literal("(");
+			do printObject(head(o));
+			do print_literal(" ");
+			do printObject(head(tail(o)));
+			do print_literal(")");
+		}
 		do print_literal("(");
 		do printObject(head(o));
-		do print_literal(" . ");
-		do printObject(tail(o));
+		do printTail(tail(o));
 		do print_literal(")");
 	}
 
 	return;
+}
+
+function void printTail_(Object o) {
+  if(IS_NIL(o)) {
+    // proper list end — print nothing, the ")" is added by the caller
+  } else if(IS_ATOM(o)) {
+    // improper list — fall back to dot notation for the tail
+    do print_literal(" . ");
+    do printObject(o);
+  } else {
+    // another cons cell — continue the list with a space
+    do print_literal(" ");
+    do printObject(head(o));
+    do printTail(tail(o));
+  }
+  return;
 }
 
 function void debugObject_(Object o) {
@@ -1224,6 +1245,14 @@ function Object apply_(Object f, Object x, Object env) {
   if(EQ(f, kTail)) {
 		return tail(head(x));
 	}
+	if(EQ(f, kRead)) {
+		return read();
+	}
+	if(EQ(f, kPrint)) {
+		do printObject(head(x));
+		return x;
+	}
+	
 
 	// Otherwise assume f is a variable bound to some function or builtin.
   return apply(lookup(f, env), x, env);
