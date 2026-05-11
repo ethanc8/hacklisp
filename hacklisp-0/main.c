@@ -365,9 +365,6 @@ function void main() {
 int main(int argc, char** argv) {
 #endif
 	#if JACK
-		var char c;
-		var i16 i;
-
 		// Heap is 2048~16383
 		let RAM = 0;
 
@@ -710,6 +707,9 @@ function void newline_() {
 // Reads a line, and returns it after parsing.
 function Object read_() {
 	#if JACK
+		var i16 i;
+		var char c;
+
 		let i = 0;
 
 		let c = Keyboard.readChar();
@@ -750,17 +750,21 @@ function void printObject_(Object o) {
 function void printTail_(Object o) {
   if(IS_NIL(o)) {
     // proper list end — print nothing, the ")" is added by the caller
-  } else if(IS_ATOM(o)) {
+		return;
+  }
+
+	if(IS_ATOM(o)) {
     // improper list — fall back to dot notation for the tail
     do print_literal(" . ");
     do printObject(o);
-  } else {
-    // another cons cell — continue the list with a space
-    do print_literal(" ");
-    do printObject(head(o));
-    do printTail(tail(o));
+		return;
   }
-  return;
+	
+	// another cons cell — continue the list with a space
+	do print_literal(" ");
+	do printObject(head(o));
+	do printTail(tail(o));
+	return;
 }
 
 function void debugObject_(Object o) {
@@ -1155,11 +1159,11 @@ function Object evlis_(Object exprs, Object env) {
 // Called "assoc" in some implementations.
 function Object lookup_(Object key, Object alist) {
 	if(EQ(alist, NIL)) {
-		print_literal("Attempted to lookup `");
-		printObject(key);
-		print_literal("`");
-		newline();
-		throw_error("Lookup failed.");
+		do print_literal("Attempted to lookup `");
+		do printObject(key);
+		do print_literal("`");
+		do newline();
+		do throw_error("Lookup failed.");
 	}
 	// If the first key-value pair in alist matches,
 	// then return the value.
