@@ -13,6 +13,14 @@ symbols = [
 	("read", "kRead"),
 	("print", "kPrint"),
 	("integer?", "kInteger"),
+	("+", "kPlus"),
+	("-", "kMinus"),
+	("*", "kTimes"),
+	("/", "kDivide"),
+	("&", "kBitwiseAnd"),
+	("|", "kBitwiseOr"),
+	("mem-get", "kMemGet"),
+	("mem-put!", "kMemPut"),
 ]
 
 offset = 0

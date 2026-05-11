@@ -1,17 +1,11 @@
 ((lambda (main nil? evcon evlis lookup pairlis eval apply prog)
-		(main (quote (NIL . NIL) (TRUE . TRUE)))
+		(main main (quote (NIL . NIL) (TRUE . TRUE)))
  )
-  (quote (lambda-main (builtins) (prog
-    (print (lookup (quote a) (quote ((a . 1)))))
+  (quote (lambda-main (main builtins) (prog
+		(print (quote HL0>))
+		(print (eval (read)))
 		(print)
-		(print (pairlis (quote (A B C)) (quote (U V W)) (quote ((D . X) (E . Y)))))
-    (print)
-		(print (eval (quote (= 1 2)) builtins))
-		(print)
-		(print (eval (quote ((lambda (x) x) (quote hello))) builtins))
-		(print)
-		(print (eval (quote ((lambda (x y) (cons x y)) (quote a) (quote b))) builtins))
-		(print)
+    (main main builtins)
   )))
 	(quote (lambda-nil? (x)
 		(= x NIL)
@@ -108,6 +102,17 @@
 				((= f (quote tail)) (tail (head x)))
 				((= f (quote read)) (read))
 				((= f (quote print)) (print (head x)))
+				((= f (quote +)) (+ (head x) (head (tail x))))
+				((= f (quote 0)) (cond
+					((nil? (tail x)) (- (head x)))
+					(TRUE (- (head x) (head (tail x))))
+				))
+				((= f (quote *)) (* (head x) (head (tail x))))
+				((= f (quote /)) (/ (head x) (head (tail x))))
+				((= f (quote &)) (& (head x) (head (tail x))))
+				((= f (quote |)) (| (head x) (head (tail x))))
+				((= f (quote mem-get)) (mem-get (head x)))
+				((= f (quote mem-put!)) (mem-put (head x) (head (tail x))))
 				; Otherwise assume f is a variable bound to some function or builtin.
 				(TRUE (apply (lookup f env) x env))
 			))
@@ -128,5 +133,5 @@
 
 	; Runs all of the arguments in order.
 	; Returns NIL.
-  (quote (lambda-prog () NIL))
+  (quote (lambda-prog (args...) NIL))
 )

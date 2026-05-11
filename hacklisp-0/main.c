@@ -461,8 +461,45 @@ int main(int argc, char** argv) {
 	let RAM[atomStackBase + 67] = KEYCODE_r;
 	let RAM[atomStackBase + 68] = KEYCODE_QUESTION;
 	let RAM[atomStackBase + 69] = 0;
+	#define kPlus (atomStackBase + 70)
+	let RAM[atomStackBase + 70] = KEYCODE_PLUS;
+	let RAM[atomStackBase + 71] = 0;
+	#define kMinus (atomStackBase + 72)
+	let RAM[atomStackBase + 72] = KEYCODE_MINUS;
+	let RAM[atomStackBase + 73] = 0;
+	#define kTimes (atomStackBase + 74)
+	let RAM[atomStackBase + 74] = KEYCODE_ASTERISK;
+	let RAM[atomStackBase + 75] = 0;
+	#define kDivide (atomStackBase + 76)
+	let RAM[atomStackBase + 76] = KEYCODE_SLASH;
+	let RAM[atomStackBase + 77] = 0;
+	#define kBitwiseAnd (atomStackBase + 78)
+	let RAM[atomStackBase + 78] = KEYCODE_AMPERSAND;
+	let RAM[atomStackBase + 79] = 0;
+	#define kBitwiseOr (atomStackBase + 80)
+	let RAM[atomStackBase + 80] = KEYCODE_VERBAR;
+	let RAM[atomStackBase + 81] = 0;
+	#define kMemGet (atomStackBase + 82)
+	let RAM[atomStackBase + 82] = KEYCODE_m;
+	let RAM[atomStackBase + 83] = KEYCODE_e;
+	let RAM[atomStackBase + 84] = KEYCODE_m;
+	let RAM[atomStackBase + 85] = KEYCODE_MINUS;
+	let RAM[atomStackBase + 86] = KEYCODE_g;
+	let RAM[atomStackBase + 87] = KEYCODE_e;
+	let RAM[atomStackBase + 88] = KEYCODE_t;
+	let RAM[atomStackBase + 89] = 0;
+	#define kMemPut (atomStackBase + 90)
+	let RAM[atomStackBase + 90] = KEYCODE_m;
+	let RAM[atomStackBase + 91] = KEYCODE_e;
+	let RAM[atomStackBase + 92] = KEYCODE_m;
+	let RAM[atomStackBase + 93] = KEYCODE_MINUS;
+	let RAM[atomStackBase + 94] = KEYCODE_p;
+	let RAM[atomStackBase + 95] = KEYCODE_u;
+	let RAM[atomStackBase + 96] = KEYCODE_t;
+	let RAM[atomStackBase + 97] = KEYCODE_EXCL;
+	let RAM[atomStackBase + 98] = 0;
 
-	let atomStackTop = atomStackBase + 70;
+	let atomStackTop = atomStackBase + 99;
 
 	// (
 	//   (NIL . NIL)
@@ -1297,6 +1334,34 @@ function Object apply_(Object f, Object x, Object env) {
 		} else {
 			do printObject(head(x));
 		}
+		return x;
+	}
+	if(EQ(f, kPlus)) {
+		return internInteger(GET_INTEGER_VALUE(head(x)) + GET_INTEGER_VALUE(head(tail(x))));
+	}
+	if(EQ(f, kMinus)) {
+		if(IS_NIL(tail(x))) {
+			return internInteger(-GET_INTEGER_VALUE(head(x)));
+		}
+		return internInteger(GET_INTEGER_VALUE(head(x)) - GET_INTEGER_VALUE(head(tail(x))));
+	}
+	if(EQ(f, kTimes)) {
+		return internInteger(GET_INTEGER_VALUE(head(x)) * GET_INTEGER_VALUE(head(tail(x))));
+	}
+	if(EQ(f, kDivide)) {
+		return internInteger(GET_INTEGER_VALUE(head(x)) / GET_INTEGER_VALUE(head(tail(x))));
+	}
+	if(EQ(f, kBitwiseAnd)) {
+		return internInteger(GET_INTEGER_VALUE(head(x)) & GET_INTEGER_VALUE(head(tail(x))));
+	}
+	if(EQ(f, kBitwiseOr)) {
+		return internInteger(GET_INTEGER_VALUE(head(x)) | GET_INTEGER_VALUE(head(tail(x))));
+	}
+	if(EQ(f, kMemGet)) {
+		return internInteger(RAM[GET_INTEGER_VALUE(head(x))]);
+	}
+	if(EQ(f, kMemPut)) {
+		let RAM[GET_INTEGER_VALUE(head(x))] = GET_INTEGER_VALUE(head(tail(x)));
 		return x;
 	}
 	
