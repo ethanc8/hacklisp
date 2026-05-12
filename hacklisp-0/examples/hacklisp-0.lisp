@@ -112,7 +112,7 @@
 				((= f (quote &)) (& (head x) (head (tail x))))
 				((= f (quote |)) (| (head x) (head (tail x))))
 				((= f (quote mem-get)) (mem-get (head x)))
-				((= f (quote mem-put!)) (mem-put (head x) (head (tail x))))
+				((= f (quote mem-put!)) (mem-put! (head x) (head (tail x))))
 				; Otherwise assume f is a variable bound to some function or builtin.
 				(TRUE (apply (lookup f env) x env))
 			))
