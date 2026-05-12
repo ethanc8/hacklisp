@@ -591,3 +591,9 @@ define fibfast(n)   ; Typical function notation
 ```
 ]
 
+== Try it yourself
+
+#link("https://github.com/ethanc8/hacklisp/")
+
+#image("QR Code 2026-05-12 11-18-27.png")
+
